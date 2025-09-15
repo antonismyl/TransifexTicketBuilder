@@ -1,7 +1,7 @@
 # Transifex Ticket Builder
 ## Overview
 
-The Transifex Ticket Builder is a comprehensive tool for creating and managing support tickets with impact assessment and prioritization. Originally designed to replace our Excel-based bug scoring system, it has evolved into a full-featured ticket management platform.
+The Transifex Ticket Builder is a comprehensive tool for creating and managing support tickets with impact assessment and prioritization. Originally designed to replace our Excel-based bug scoring system.
 
 ## Main Features
 
@@ -24,7 +24,7 @@ The Transifex Ticket Builder is a comprehensive tool for creating and managing s
 - Full base64 image embedding for JIRA compatibility when copying
 
 ### **Enhanced User Experience**
-- 6-step intuitive workflow with progress tracking
+- 6-step workflow with progress tracking
 - Internal vs external report handling
 - Real-time form validation and smart navigation
 - Auto Light/Dark mode based on system preferences
@@ -48,16 +48,3 @@ The tool generates professionally formatted JIRA templates with:
 - Structured documentation sections
 - Embedded images (base64) for immediate JIRA compatibility
 - Priority and score summary for quick triage
-
-## Changelog
-
-### Latest Update
-- **Markdown output format**: Output now uses proper Markdown formatting with headers and bold text for better Jira compatibility
-- **Full Q&A format**: Replaced letter-based answers (ABCDE) with complete questions and selected answers for clarity
-- **Improved question clarity**: Shortened and simplified question text:
-  - "How important is this BUG for the customer?" → "What's the impact on the customer?"
-  - "What kind of customer is affected?" → "Customer Plan?"
-  - "Is this a possible churn customer? CSM will give this info." → "Churn Risk?"
-  - "How long can the customer wait for the fix?" → "How urgent is this fix?"
-- **Condensed answer options**: Made all answer choices more concise and actionable
-- **Enhanced output structure**: Customer details now display as header, optimized spacing, removed redundant sections
