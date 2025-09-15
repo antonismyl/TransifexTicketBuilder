@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en" class=""> <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transifex Ticket Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script>
+        // Tailwind CSS Configuration (remains here for CDN usage)
+        tailwind.config = {
+            darkMode: 'class', // Enable class-based dark mode
+            theme: {
+                extend: {
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                    transitionDuration: {
+                        '1500': '1500ms',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-100 dark:bg-slate-900 transition-colors duration-300">
+    <a href="#main-content-area" class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-sky-600 focus:text-white focus:rounded-md focus:shadow-lg">Skip to main content</a>
+
+    <div id="main-container" class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-h-screen">
+        <h1 class="text-3xl sm:text-4xl font-bold text-center mb-8 sm:mb-12 text-slate-800 dark:text-white">Transifex Ticket Builder</h1>
+        
+        <!-- Progress indicator -->
+        <div id="progressIndicator" class="max-w-2xl mx-auto mb-8 hidden">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-slate-600 dark:text-slate-300">Step <span id="currentStep">1</span> of 6</span>
+                <span class="text-sm font-medium text-slate-600 dark:text-slate-300" id="stepTitle">Report Type</span>
+            </div>
+            <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                <div id="progressBar" class="bg-sky-500 h-2 rounded-full transition-all duration-300" style="width: 20%"></div>
+            </div>
+        </div>
+
+        <!-- Step 1: Report Type Selection -->
+        <div id="step1" class="step-container">
+            <div class="max-w-md mx-auto">
+                <div class="bg-white dark:bg-slate-800 shadow-xl rounded-xl p-8 text-center">
+                    <h2 class="text-2xl font-semibold mb-6 text-slate-700 dark:text-slate-200">What would you like to create?</h2>
+                    <div class="space-y-4">
+                        <button id="selectBugBtn" class="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-4 px-6 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-red-500 transition duration-150 ease-in-out text-lg">
+                            🐛 Bug Report
+                        </button>
+                        <button id="selectStoryBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-4 px-6 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-blue-500 transition duration-150 ease-in-out text-lg opacity-50 cursor-not-allowed" disabled>
+                            📋 Story Report <span class="text-sm">(Coming Soon)</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Ticket Type Selection -->
+        <div id="step2" class="step-container hidden">
+            <div class="max-w-md mx-auto">
+                <div class="bg-white dark:bg-slate-800 shadow-xl rounded-xl p-8 text-center">
+                    <h2 class="text-2xl font-semibold mb-6 text-slate-700 dark:text-slate-200">What type of ticket?</h2>
+                    <div class="space-y-4">
+                        <button id="selectNewTicketBtn" class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-6 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-green-500 transition duration-150 ease-in-out text-lg">
+                            🆕 Create New Ticket
+                        </button>
+                        <button id="selectUpdateTicketBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-4 px-6 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-blue-500 transition duration-150 ease-in-out text-lg">
+                            🔄 Update Existing Ticket
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Customer Details -->
+        <div id="step3" class="step-container hidden">
+            <div class="max-w-2xl mx-auto">
+                <div class="bg-white dark:bg-slate-800 shadow-xl rounded-xl p-8">
+                    <h2 class="text-2xl font-semibold mb-6 text-slate-700 dark:text-slate-200">Customer Details</h2>
+                    
+                    <div class="mb-6">
+                        <label class="flex items-center space-x-3">
+                            <input type="checkbox" id="internalReport" class="h-4 w-4 text-sky-600 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-sky-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 rounded">
+                            <span class="text-sm font-medium text-slate-700 dark:text-slate-300">This is an internal report</span>
+                        </label>
+                    </div>
+                    
+                    <div id="externalFields" class="space-y-4">
+                        <div>
+                            <label for="customerName" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Customer Name</label>
+                            <input type="text" id="customerName" placeholder="Enter customer's org name" class="mt-1 block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white">
+                        </div>
+                        <div>
+                            <label for="monthlyARR" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Monthly ARR ($)</label>
+                            <input type="number" id="monthlyARR" placeholder="Enter monthly ARR" class="mt-1 block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4 mt-4">
+                        <div>
+                            <label for="intercomURL" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Intercom URL</label>
+                            <input type="text" id="intercomURL" placeholder="Enter Intercom URL" class="mt-1 block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white">
+                        </div>
+                        <div>
+                            <label for="slackURL" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Slack URL</label>
+                            <input type="text" id="slackURL" placeholder="Enter Slack URL" class="mt-1 block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Impact Assessment -->
+        <div id="step4" class="step-container hidden">
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-white dark:bg-slate-800 shadow-xl rounded-xl p-8">
+                    <h2 class="text-2xl font-semibold mb-6 text-slate-700 dark:text-slate-200">Impact Assessment</h2>
+                    <div id="questionsContainer" class="space-y-6">
+                        <!-- Questions will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 5: Bug Documentation -->
+        <div id="step5" class="step-container hidden">
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-white dark:bg-slate-800 shadow-xl rounded-xl p-8">
+                    <h2 class="text-2xl font-semibold mb-6 text-slate-700 dark:text-slate-200">Bug Documentation</h2>
+                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                        <p class="text-sm text-blue-700 dark:text-blue-300">
+                            💡 <strong>Tip:</strong> You can paste images directly into text fields using Ctrl+V (Cmd+V on Mac) or drag and drop image files.
+                        </p>
+                    </div>
+                    <div class="space-y-6">
+                        <div>
+                            <label for="bugSummary" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Summary</label>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Brief description of the issue, include screenshots, relevant URLs, and any supporting evidence</p>
+                            <textarea id="bugSummary" rows="6" placeholder="Describe the issue in detail..." class="block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white"></textarea>
+                        </div>
+                        <div>
+                            <label for="stepsToReproduce" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Steps to Reproduce</label>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Detailed steps to reproduce the issue</p>
+                            <textarea id="stepsToReproduce" rows="6" placeholder="1. Go to the main page 2. Click on the submit button 3. Enter invalid data" class="block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white"></textarea>
+                        </div>
+                        <div>
+                            <label for="expectedVsActual" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Expected vs Actual Behavior</label>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Compare what should happen versus what actually occurs</p>
+                            <textarea id="expectedVsActual" rows="6" placeholder="Expected: The form should save successfully and display confirmation. Actual: Error message appears instead." class="block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 6: Final Output -->
+        <div id="step6" class="step-container hidden">
+            <div class="max-w-4xl mx-auto">
+                <div class="space-y-6">
+                    <!-- Score and Priority Display -->
+                    <div class="bg-white dark:bg-slate-800 shadow-xl rounded-xl p-8">
+                        <div id="priorityAlert" class="mb-6">
+                            <h2 class="text-3xl font-bold text-slate-700 dark:text-slate-200">Priority: <span id="priorityText" class="font-bold"></span></h2>
+                            <p class="text-xl mt-2 text-slate-600 dark:text-slate-300">Score: <span id="scoreValue" class="font-bold"></span></p>
+                        </div>
+                        <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-6 relative overflow-hidden">
+                            <div id="scoreProgressBar" class="bg-sky-500 h-full rounded-full transition-all duration-1500 ease-in-out" style="width: 0%;" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            <div class="absolute inset-0 flex items-center pointer-events-none">
+                                <div style="left: 8%;" class="absolute h-full w-0.5 bg-slate-400 dark:bg-slate-500 top-0">
+                                    <span class="absolute -bottom-6 text-xs text-slate-500 dark:text-slate-400 transform -translate-x-1/2">20</span>
+                                </div>
+                                <div style="left: 20%;" class="absolute h-full w-0.5 bg-slate-400 dark:bg-slate-500 top-0">
+                                    <span class="absolute -bottom-6 text-xs text-slate-500 dark:text-slate-400 transform -translate-x-1/2">50</span>
+                                </div>
+                                <div style="left: 40%;" class="absolute h-full w-0.5 bg-slate-400 dark:bg-slate-500 top-0">
+                                    <span class="absolute -bottom-6 text-xs text-slate-500 dark:text-slate-400 transform -translate-x-1/2">100</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Ticket Template -->
+                    <div class="bg-white dark:bg-slate-800 shadow-xl rounded-xl p-8">
+                        <h3 class="text-xl font-semibold mb-4 text-slate-700 dark:text-slate-200">JIRA Ticket Template</h3>
+                        <textarea id="copyText" rows="15" readonly class="block w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 read-only:opacity-75 dark:text-slate-300 font-mono"></textarea>
+                        <div class="mt-6 flex flex-col sm:flex-row gap-4">
+                            <button id="copyBtn" class="flex-1 bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-sky-500 transition duration-150 ease-in-out">
+                                📋 Copy to Clipboard
+                            </button>
+                            <button id="startNewBtn" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-green-500 transition duration-150 ease-in-out">
+                                🆕 Start New Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Navigation -->
+        <div id="navigationContainer" class="max-w-2xl mx-auto mt-8 hidden">
+            <div class="flex justify-between">
+                <button id="prevBtn" class="bg-slate-500 hover:bg-slate-600 text-white font-semibold py-2.5 px-6 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-slate-500 transition duration-150 ease-in-out" disabled>
+                    ← Previous
+                </button>
+                <button id="nextBtn" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2.5 px-6 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-sky-500 transition duration-150 ease-in-out">
+                    Next →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

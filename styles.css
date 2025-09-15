@@ -1,0 +1,56 @@
+/* Basic body styling for font */
+body {
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Step container styling */
+.step-container {
+    opacity: 1;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.step-container.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Smooth transitions for disabled buttons */
+button:disabled {
+    transition: opacity 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+/* Enhanced focus styles for better accessibility */
+input:focus,
+textarea:focus,
+button:focus {
+    outline: 2px solid #0ea5e9;
+    outline-offset: 2px;
+}
+
+/* Progress bar animation */
+#progressBar {
+    transition: width 0.5s ease-in-out;
+}
+
+/* Better spacing for form elements */
+.space-y-6 > * + * {
+    margin-top: 1.5rem;
+}
+
+/* Improved radio button alignment */
+input[type="radio"] {
+    flex-shrink: 0;
+}
+
+/* Image placeholder styling in textareas */
+textarea {
+    font-family: 'Inter', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+/* Visual enhancement for drag and drop */
+textarea.drag-over {
+    background-color: #f0f9ff !important;
+    border-color: #0ea5e9 !important;
+}
