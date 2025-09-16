@@ -59,9 +59,9 @@ const totalSteps = 6;
 const stepTitles = [
     'Report Type',
     'Ticket Type',
-    'Customer Details', 
+    'Customer Details',
     'Impact Assessment',
-    'Bug Documentation',
+    'Documentation',
     'Final Report'
 ];
 
@@ -72,14 +72,23 @@ const appData = {
     isInternal: false,
     customerName: '',
     monthlyARR: '',
+    planType: '',
+    customPlanText: '',
     intercomURL: '',
     slackURL: '',
+    customerComment: '',
     questionsAnswered: {},
+    // Bug-specific fields
     bugSummary: '',
     stepsToReproduce: '',
     expectedVsActual: '',
     calculatedScore: 0,
     priority: '',
+    // Story-specific fields
+    storyDescription: '',
+    currentFunctionality: '',
+    expectedFunctionality: '',
+    timelineContext: '',
     images: {}, // Store image data: { imageId: { fileName, base64Data } }
     finalTemplateWithImages: '' // Store the version with full base64 for copying
 };
@@ -133,9 +142,18 @@ function initDarkMode() {
 function setupEventListeners() {
     // Step 1: Report type selection
     const selectBugBtn = document.getElementById('selectBugBtn');
+    const selectStoryBtn = document.getElementById('selectStoryBtn');
+
     if (selectBugBtn) {
         selectBugBtn.addEventListener('click', () => {
             appData.reportType = 'bug';
+            nextStep();
+        });
+    }
+
+    if (selectStoryBtn) {
+        selectStoryBtn.addEventListener('click', () => {
+            appData.reportType = 'story';
             nextStep();
         });
     }
@@ -162,6 +180,12 @@ function setupEventListeners() {
     const internalReportCheckbox = document.getElementById('internalReport');
     if (internalReportCheckbox) {
         internalReportCheckbox.addEventListener('change', handleInternalReportToggle);
+    }
+
+    // Step 3: Plan type dropdown
+    const planTypeSelect = document.getElementById('planType');
+    if (planTypeSelect) {
+        planTypeSelect.addEventListener('change', handlePlanTypeChange);
     }
 
     // Navigation buttons
@@ -201,7 +225,7 @@ function initStepNavigation() {
  */
 function showStep(stepNumber) {
     currentStep = stepNumber;
-    
+
     // Hide all steps
     for (let i = 1; i <= totalSteps; i++) {
         const stepElement = document.getElementById(`step${i}`);
@@ -209,17 +233,22 @@ function showStep(stepNumber) {
             stepElement.classList.add('hidden');
         }
     }
-    
+
     // Show current step
     const currentStepElement = document.getElementById(`step${stepNumber}`);
     if (currentStepElement) {
         currentStepElement.classList.remove('hidden');
     }
-    
+
+    // Handle step 4 content based on report type
+    if (stepNumber === 4) {
+        updateStep4Content();
+    }
+
     // Update progress and navigation
     updateProgressIndicator();
     updateNavigation();
-    
+
     // Focus management
     focusFirstElement(stepNumber);
 }
@@ -284,14 +313,46 @@ function canProceedFromCurrentStep() {
         case 3: // Customer details
             const internalCheckbox = document.getElementById('internalReport');
             if (internalCheckbox && internalCheckbox.checked) {
-                return true; // No required fields for internal reports
+                // For story updates, customer comment is required
+                if (appData.reportType === 'story' && appData.ticketType === 'update') {
+                    const customerComment = document.getElementById('customerComment');
+                    return customerComment && customerComment.value.trim() !== '';
+                }
+                return true; // No required fields for internal reports (except story updates)
             }
             const customerName = document.getElementById('customerName');
-            return customerName && customerName.value.trim() !== '';
-        case 4: // Impact assessment
-            return questions.every(q => 
-                document.querySelector(`input[name="${q.id}"]:checked`)
-            );
+            let nameValid = customerName && customerName.value.trim() !== '';
+
+            // For story updates, customer comment is also required
+            if (appData.reportType === 'story' && appData.ticketType === 'update') {
+                const customerComment = document.getElementById('customerComment');
+                const commentValid = customerComment && customerComment.value.trim() !== '';
+                return nameValid && commentValid;
+            }
+
+            return nameValid;
+        case 4: // Impact assessment or Story documentation
+            if (appData.reportType === 'story') {
+                // For story updates, skip this step entirely
+                if (appData.ticketType === 'update') {
+                    return true;
+                }
+                // For new stories, all story fields are required
+                const storyDescription = document.getElementById('storyDescription');
+                const currentFunctionality = document.getElementById('currentFunctionality');
+                const expectedFunctionality = document.getElementById('expectedFunctionality');
+                const timelineContext = document.getElementById('timelineContext');
+
+                return storyDescription && storyDescription.value.trim() !== '' &&
+                       currentFunctionality && currentFunctionality.value.trim() !== '' &&
+                       expectedFunctionality && expectedFunctionality.value.trim() !== '' &&
+                       timelineContext && timelineContext.value.trim() !== '';
+            } else {
+                // Bug impact assessment
+                return questions.every(q =>
+                    document.querySelector(`input[name="${q.id}"]:checked`)
+                );
+            }
         case 5: // Bug documentation
             const bugSummary = document.getElementById('bugSummary');
             // For update tickets, only summary is required
@@ -315,18 +376,44 @@ function canProceedFromCurrentStep() {
 function nextStep() {
     if (currentStep < totalSteps && canProceedFromCurrentStep()) {
         saveCurrentStepData();
-        
+
+        let nextStepNumber = currentStep + 1;
+
+        // For story updates, skip steps 4 and 5 (go directly to final step)
+        if (appData.reportType === 'story' && appData.ticketType === 'update' && currentStep === 3) {
+            nextStepNumber = 6; // Skip to final step
+        }
+
+        // For story updates, if somehow on step 4, skip to final step
+        if (appData.reportType === 'story' && appData.ticketType === 'update' && currentStep === 4) {
+            nextStepNumber = 6;
+        }
+
+        // For story reports (new), skip step 5 (bug documentation)
+        if (appData.reportType === 'story' && appData.ticketType === 'new' && currentStep === 4) {
+            nextStepNumber = 6;
+        }
+
+        if (nextStepNumber === 6) {
+            // Generate final output before showing final step
+            if (appData.reportType === 'bug') {
+                calculateScore(); // Only calculate score for bugs
+            } else {
+                generateFinalOutput(); // Generate story output directly
+            }
+        }
+
         if (currentStep === 5) {
-            // Calculate score before showing final step
+            // Calculate score before showing final step (for bugs)
             calculateScore();
         }
-        
+
         // Update UI based on ticket type when moving to bug documentation step
-        if (currentStep + 1 === 5) {
+        if (nextStepNumber === 5) {
             updateBugDocumentationStep();
         }
-        
-        showStep(currentStep + 1);
+
+        showStep(nextStepNumber);
     }
 }
 
@@ -349,22 +436,76 @@ function saveCurrentStepData() {
             appData.isInternal = document.getElementById('internalReport').checked;
             appData.customerName = document.getElementById('customerName').value;
             appData.monthlyARR = document.getElementById('monthlyARR').value;
+            appData.planType = document.getElementById('planType').value;
+            appData.customPlanText = document.getElementById('customPlanText').value;
             appData.intercomURL = document.getElementById('intercomURL').value;
             appData.slackURL = document.getElementById('slackURL').value;
+            appData.customerComment = document.getElementById('customerComment').value;
             break;
-        case 4: // Impact assessment
-            questions.forEach(question => {
-                const selectedOption = document.querySelector(`input[name="${question.id}"]:checked`);
-                if (selectedOption) {
-                    appData.questionsAnswered[question.id] = selectedOption.value;
-                }
-            });
+        case 4: // Impact assessment or Story documentation
+            if (appData.reportType === 'story') {
+                // Save story documentation fields
+                appData.storyDescription = document.getElementById('storyDescription').value;
+                appData.currentFunctionality = document.getElementById('currentFunctionality').value;
+                appData.expectedFunctionality = document.getElementById('expectedFunctionality').value;
+                appData.timelineContext = document.getElementById('timelineContext').value;
+            } else {
+                // Save bug impact assessment questions
+                questions.forEach(question => {
+                    const selectedOption = document.querySelector(`input[name="${question.id}"]:checked`);
+                    if (selectedOption) {
+                        appData.questionsAnswered[question.id] = selectedOption.value;
+                    }
+                });
+            }
             break;
         case 5: // Bug documentation
             appData.bugSummary = document.getElementById('bugSummary').value;
             appData.stepsToReproduce = document.getElementById('stepsToReproduce').value;
             appData.expectedVsActual = document.getElementById('expectedVsActual').value;
             break;
+    }
+}
+
+/**
+ * Updates Step 4 content based on report type
+ */
+function updateStep4Content() {
+    const questionsContainer = document.getElementById('questionsContainer');
+    const storyContainer = document.getElementById('storyContainer');
+    const step4Title = document.getElementById('step4Title');
+
+    if (appData.reportType === 'story') {
+        // Show story documentation, hide questions
+        questionsContainer.classList.add('hidden');
+        storyContainer.classList.remove('hidden');
+        step4Title.textContent = 'Story Documentation';
+    } else {
+        // Show questions, hide story documentation
+        questionsContainer.classList.remove('hidden');
+        storyContainer.classList.add('hidden');
+        step4Title.textContent = 'Impact Assessment';
+    }
+}
+
+/**
+ * Handles plan type dropdown change
+ */
+function handlePlanTypeChange(event) {
+    const planType = event.target.value;
+    const customPlanContainer = document.getElementById('customPlanContainer');
+    const customPlanText = document.getElementById('customPlanText');
+
+    if (planType === 'Custom') {
+        customPlanContainer.classList.remove('hidden');
+        if (customPlanText) {
+            customPlanText.focus();
+        }
+    } else {
+        customPlanContainer.classList.add('hidden');
+        if (customPlanText) {
+            customPlanText.value = ''; // Clear custom text when switching away
+        }
     }
 }
 
@@ -488,52 +629,103 @@ function generateFinalOutput() {
     // Determine customer info
     let customerInfo;
     let plan = 'N/A';
-    
+
     if (appData.isInternal) {
         customerInfo = 'Reported internally';
         plan = 'Internal';
     } else {
         customerInfo = appData.customerName || 'N/A';
-        const customerTypeValue = appData.questionsAnswered['customerType'];
-        if (customerTypeValue) {
-            const planMap = { 'A': 'Enterprise', 'B': 'Growth', 'C': 'Starter', 'D': 'Open-source', 'E': 'Internal' };
-            plan = planMap[customerTypeValue] || 'N/A';
+
+        // Use the new planType dropdown if selected, otherwise fall back to old logic for bugs
+        if (appData.planType) {
+            if (appData.planType === 'Custom' && appData.customPlanText) {
+                plan = appData.customPlanText;
+            } else if (appData.planType !== 'Custom') {
+                plan = appData.planType;
+            }
+        } else if (appData.reportType === 'bug') {
+            const customerTypeValue = appData.questionsAnswered['customerType'];
+            if (customerTypeValue) {
+                const planMap = { 'A': 'Enterprise', 'B': 'Growth', 'C': 'Starter', 'D': 'Open-source', 'E': 'Internal' };
+                plan = planMap[customerTypeValue] || 'N/A';
+            }
+        } else {
+            // For stories with no plan selected
+            plan = 'N/A';
         }
     }
-    
+
     const annualARR = appData.isInternal ? 0 : (parseFloat(appData.monthlyARR || 0) * 12);
     const intercomURL = appData.intercomURL || 'N/A';
     const slackURL = appData.slackURL || 'N/A';
-    
-    // Generate Q&A section
-    let qaSection = '';
-    questions.forEach(question => {
-        const selectedValue = appData.questionsAnswered[question.id];
-        if (selectedValue) {
-            const option = question.options.find(opt => opt.value === selectedValue);
-            if (option) {
-                qaSection += `**${question.text}** ${option.label}\n`;
+    const customerComment = appData.customerComment || '';
+
+    // Create template based on report type
+    let template;
+
+    if (appData.reportType === 'story') {
+        // Story template
+        if (appData.ticketType === 'update') {
+            // Story update: Only customer details + comment
+            template = `## Customer Details
+**Customer:** ${customerInfo}, ${plan}, $${annualARR.toFixed(2)}
+**Intercom URL:** ${intercomURL}
+**Slack URL:** ${slackURL}`;
+            if (customerComment.trim() !== '') {
+                template += `\n**Comment:** ${customerComment}`;
+            }
+        } else {
+            // New story: Full story template
+            template = `## Description
+${appData.storyDescription}
+
+## Current Functionality
+${appData.currentFunctionality}
+
+## Expected Functionality
+${appData.expectedFunctionality}
+
+## Timeline & Context
+${appData.timelineContext}
+
+## Customer Details
+**Customer:** ${customerInfo}, ${plan}, $${annualARR.toFixed(2)}
+**Intercom URL:** ${intercomURL}
+**Slack URL:** ${slackURL}`;
+            if (customerComment.trim() !== '') {
+                template += `\n**Comment:** ${customerComment}`;
             }
         }
-    });
-    
-    // Create template based on ticket type
-    let template;
-    
-    if (appData.ticketType === 'update') {
-        // For update tickets: Customer details + Questionnaire + Summary only
-        template = `## Customer Details
-**Customer:** ${customerInfo}, ${plan}, $${annualARR.toFixed(2)}
-**Intercom URL:** ${intercomURL}  
-**Slack URL:** ${slackURL}
+    } else {
+        // Bug template (existing logic)
+        // Generate Q&A section
+        let qaSection = '';
+        questions.forEach(question => {
+            const selectedValue = appData.questionsAnswered[question.id];
+            if (selectedValue) {
+                const option = question.options.find(opt => opt.value === selectedValue);
+                if (option) {
+                    qaSection += `**${question.text}** ${option.label}\n`;
+                }
+            }
+        });
 
-${qaSection}**Final Score:** ${appData.calculatedScore}
+        if (appData.ticketType === 'update') {
+            // For bug update tickets: Customer details + Questionnaire + Summary only
+            template = `## Customer Details
+**Customer:** ${customerInfo}, ${plan}, $${annualARR.toFixed(2)}
+**Intercom URL:** ${intercomURL}
+**Slack URL:** ${slackURL}`;
+            if (customerComment.trim() !== '') {
+                template += `\n**Comment:** ${customerComment}`;
+            }
+            template += `\n\n${qaSection}**Final Score:** ${appData.calculatedScore}
 
 ## Summary
 ${appData.bugSummary}`;
-    } else {
-        // For new tickets: Full template with all fields
-        template = `## Summary
+        } else {
+            // For new bug tickets: Full template with all fields
+            template = `## Summary
 ${appData.bugSummary}
 
 ## Steps to Reproduce
@@ -544,15 +736,18 @@ ${appData.expectedVsActual}
 
 ## Customer Details
 **Customer:** ${customerInfo}, ${plan}, $${annualARR.toFixed(2)}
-**Intercom URL:** ${intercomURL}  
-**Slack URL:** ${slackURL}
-
-${qaSection}**Final Score:** ${appData.calculatedScore}`;
+**Intercom URL:** ${intercomURL}
+**Slack URL:** ${slackURL}`;
+            if (customerComment.trim() !== '') {
+                template += `\n**Comment:** ${customerComment}`;
+            }
+            template += `\n\n${qaSection}**Final Score:** ${appData.calculatedScore}`;
+        }
     }
-    
+
     // Store the version with full base64 for copying
     appData.finalTemplateWithImages = replaceImagePlaceholders(template);
-    
+
     // Display the clean version with placeholders in the UI
     updateFinalStepUI(template);
 }
@@ -566,24 +761,53 @@ function updateFinalStepUI(template) {
     const priorityAlertEl = document.getElementById('priorityAlert');
     const progressBarEl = document.getElementById('scoreProgressBar');
     const copyTextEl = document.getElementById('copyText');
-    
-    if (scoreValueEl) scoreValueEl.textContent = appData.calculatedScore;
-    if (priorityTextEl) priorityTextEl.textContent = appData.priority.text;
+
     if (copyTextEl) copyTextEl.value = template;
-    
-    if (priorityAlertEl) {
-        priorityAlertEl.className = appData.priority.classList;
+
+    // Update template title based on report type
+    const templateTitle = document.getElementById('templateTitle');
+    if (templateTitle) {
+        if (appData.reportType === 'story') {
+            templateTitle.textContent = 'JIRA Story Template';
+        } else {
+            templateTitle.textContent = 'JIRA Bug Template';
+        }
     }
-    
-    if (progressBarEl) {
-        progressBarEl.style.width = '0%';
-        progressBarEl.setAttribute('aria-valuenow', '0');
-        
-        setTimeout(() => {
-            const progressPercent = Math.min(appData.calculatedScore / 250 * 100, 100);
-            progressBarEl.style.width = progressPercent + '%';
-            progressBarEl.setAttribute('aria-valuenow', progressPercent.toFixed(0));
-        }, 50);
+
+    if (appData.reportType === 'story') {
+        // For stories, hide scoring elements
+        if (priorityAlertEl) {
+            priorityAlertEl.style.display = 'none';
+        }
+        const scoreContainer = progressBarEl?.parentElement?.parentElement;
+        if (scoreContainer) {
+            scoreContainer.style.display = 'none';
+        }
+    } else {
+        // For bugs, show scoring elements
+        if (scoreValueEl) scoreValueEl.textContent = appData.calculatedScore;
+        if (priorityTextEl) priorityTextEl.textContent = appData.priority.text;
+
+        if (priorityAlertEl) {
+            priorityAlertEl.className = appData.priority.classList;
+            priorityAlertEl.style.display = 'block';
+        }
+
+        const scoreContainer = progressBarEl?.parentElement?.parentElement;
+        if (scoreContainer) {
+            scoreContainer.style.display = 'block';
+        }
+
+        if (progressBarEl) {
+            progressBarEl.style.width = '0%';
+            progressBarEl.setAttribute('aria-valuenow', '0');
+
+            setTimeout(() => {
+                const progressPercent = Math.min(appData.calculatedScore / 250 * 100, 100);
+                progressBarEl.style.width = progressPercent + '%';
+                progressBarEl.setAttribute('aria-valuenow', progressPercent.toFixed(0));
+            }, 50);
+        }
     }
 }
 
@@ -689,36 +913,51 @@ function startNewReport() {
         isInternal: false,
         customerName: '',
         monthlyARR: '',
+        planType: '',
+        customPlanText: '',
         intercomURL: '',
         slackURL: '',
+        customerComment: '',
         questionsAnswered: {},
+        // Bug-specific fields
         bugSummary: '',
         stepsToReproduce: '',
         expectedVsActual: '',
         calculatedScore: 0,
         priority: '',
+        // Story-specific fields
+        storyDescription: '',
+        currentFunctionality: '',
+        expectedFunctionality: '',
+        timelineContext: '',
         images: {},
         finalTemplateWithImages: ''
     });
-    
+
     // Reset image counter
     imageCounter = 0;
-    
+
     // Reset all form fields
-    document.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(input => {
+    document.querySelectorAll('input[type="text"], input[type="number"], textarea, select').forEach(input => {
         input.value = '';
     });
-    
+
     document.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(input => {
         input.checked = false;
     });
-    
+
     // Show external fields again
     const externalFields = document.getElementById('externalFields');
     if (externalFields) {
         externalFields.style.display = 'block';
     }
-    
+
+    // Hide custom plan container
+    const customPlanContainer = document.getElementById('customPlanContainer');
+    if (customPlanContainer) {
+        customPlanContainer.classList.add('hidden');
+    }
+
     // Go back to step 1
     showStep(1);
 }
@@ -765,15 +1004,32 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add image paste functionality to textareas
         addImagePasteSupport();
+
+        // Add input event listeners for story fields
+        addStoryFieldListeners();
     }, 100);
 });
+
+/**
+ * Adds input event listeners for story fields
+ */
+function addStoryFieldListeners() {
+    const storyFields = ['storyDescription', 'currentFunctionality', 'expectedFunctionality', 'timelineContext', 'customerComment'];
+
+    storyFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', updateNavigation);
+        }
+    });
+}
 
 /**
  * Adds image paste functionality to all textareas
  */
 function addImagePasteSupport() {
-    const textareas = ['bugSummary', 'stepsToReproduce', 'expectedVsActual'];
-    
+    const textareas = ['bugSummary', 'stepsToReproduce', 'expectedVsActual', 'storyDescription', 'currentFunctionality', 'expectedFunctionality', 'timelineContext', 'customerComment'];
+
     textareas.forEach(textareaId => {
         const textarea = document.getElementById(textareaId);
         if (textarea) {

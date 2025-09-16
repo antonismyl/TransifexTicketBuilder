@@ -51,8 +51,8 @@
                         <button id="selectBugBtn" class="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-4 px-6 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-red-500 transition duration-150 ease-in-out text-lg">
                             🐛 Bug Report
                         </button>
-                        <button id="selectStoryBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-4 px-6 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-blue-500 transition duration-150 ease-in-out text-lg opacity-50 cursor-not-allowed" disabled>
-                            📋 Story Report <span class="text-sm">(Coming Soon)</span>
+                        <button id="selectStoryBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-4 px-6 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-blue-500 transition duration-150 ease-in-out text-lg">
+                            📋 Story Report
                         </button>
                     </div>
                 </div>
@@ -98,6 +98,20 @@
                             <label for="monthlyARR" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Monthly ARR ($)</label>
                             <input type="number" id="monthlyARR" placeholder="Enter monthly ARR" class="mt-1 block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
                         </div>
+                        <div>
+                            <label for="planType" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Plan Type</label>
+                            <select id="planType" class="mt-1 block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white">
+                                <option value="">Select plan type (optional)</option>
+                                <option value="Open Source">Open Source</option>
+                                <option value="Starter">Starter</option>
+                                <option value="Growth">Growth</option>
+                                <option value="Enterprise+">Enterprise+</option>
+                                <option value="Custom">Custom</option>
+                            </select>
+                            <div id="customPlanContainer" class="mt-3 hidden">
+                                <input type="text" id="customPlanText" placeholder="Enter custom plan type..." class="block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white">
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="space-y-4 mt-4">
@@ -109,18 +123,54 @@
                             <label for="slackURL" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Slack URL</label>
                             <input type="text" id="slackURL" placeholder="Enter Slack URL" class="mt-1 block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white">
                         </div>
+                        <div>
+                            <label for="customerComment" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Customer Comment</label>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Optional context from Slack, Intercom, or customer feedback</p>
+                            <textarea id="customerComment" rows="4" placeholder="Paste relevant conversation or customer quote..." class="block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white"></textarea>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Step 4: Impact Assessment -->
+        <!-- Step 4: Impact Assessment / Story Documentation -->
         <div id="step4" class="step-container hidden">
             <div class="max-w-4xl mx-auto">
                 <div class="bg-white dark:bg-slate-800 shadow-xl rounded-xl p-8">
-                    <h2 class="text-2xl font-semibold mb-6 text-slate-700 dark:text-slate-200">Impact Assessment</h2>
+                    <h2 id="step4Title" class="text-2xl font-semibold mb-6 text-slate-700 dark:text-slate-200">Impact Assessment</h2>
+
+                    <!-- Bug Assessment Questions -->
                     <div id="questionsContainer" class="space-y-6">
                         <!-- Questions will be dynamically inserted here -->
+                    </div>
+
+                    <!-- Story Documentation -->
+                    <div id="storyContainer" class="space-y-6 hidden">
+                        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                            <p class="text-sm text-blue-700 dark:text-blue-300">
+                                💡 <strong>Tip:</strong> You can paste images directly into text fields using Ctrl+V (Cmd+V on Mac) or drag and drop image files.
+                            </p>
+                        </div>
+                        <div>
+                            <label for="storyDescription" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Description</label>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Describe what the customer wants to achieve</p>
+                            <textarea id="storyDescription" rows="4" placeholder="What does the customer want to accomplish..." class="block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white"></textarea>
+                        </div>
+                        <div>
+                            <label for="currentFunctionality" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Current Functionality</label>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Describe existing functionality (if any)</p>
+                            <textarea id="currentFunctionality" rows="4" placeholder="What functionality exists today..." class="block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white"></textarea>
+                        </div>
+                        <div>
+                            <label for="expectedFunctionality" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Expected Functionality</label>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Describe the desired functionality</p>
+                            <textarea id="expectedFunctionality" rows="4" placeholder="What the customer expects or needs..." class="block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white"></textarea>
+                        </div>
+                        <div>
+                            <label for="timelineContext" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Timeline & Context</label>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Timeline requirements, renewal implications, urgency factors, etc.</p>
+                            <textarea id="timelineContext" rows="4" placeholder="Is this urgent, about a renewal, specific deadline..." class="block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white"></textarea>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -185,7 +235,7 @@
                     
                     <!-- Ticket Template -->
                     <div class="bg-white dark:bg-slate-800 shadow-xl rounded-xl p-8">
-                        <h3 class="text-xl font-semibold mb-4 text-slate-700 dark:text-slate-200">JIRA Ticket Template</h3>
+                        <h3 id="templateTitle" class="text-xl font-semibold mb-4 text-slate-700 dark:text-slate-200">JIRA Ticket Template</h3>
                         <textarea id="copyText" rows="15" readonly class="block w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 read-only:opacity-75 dark:text-slate-300 font-mono"></textarea>
                         <div class="mt-6 flex flex-col sm:flex-row gap-4">
                             <button id="copyBtn" class="flex-1 bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-sky-500 transition duration-150 ease-in-out">
