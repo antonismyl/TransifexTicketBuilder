@@ -11,7 +11,7 @@ Internal tool for creating standardized JIRA tickets with automatic priority sco
 
 ## Usage
 
-1. Open `index.html` in your browser
+1. Go to https://antonismyl.github.io/TransifexTicketBuilder/ 
 2. Select bug or story report type
 3. Fill in customer details (name, ARR, plan type)
 4. Answer impact assessment questions (for bugs)
