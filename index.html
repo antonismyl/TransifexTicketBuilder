@@ -26,9 +26,17 @@
     </script>
 </head>
 <body class="bg-slate-100 dark:bg-slate-900 transition-colors duration-300">
-    <a href="#main-content-area" class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-sky-600 focus:text-white focus:rounded-md focus:shadow-lg">Skip to main content</a>
+    <!-- Skip Links for Accessibility -->
+    <div class="sr-only focus-within:not-sr-only focus-within:fixed focus-within:top-4 focus-within:left-4 focus-within:z-50 focus-within:bg-white focus-within:p-2 focus-within:rounded-md focus-within:shadow-lg">
+        <a href="#main-container" class="px-4 py-2 bg-sky-600 text-white rounded-md shadow-lg mr-2 focus:outline-none focus:ring-2 focus:ring-sky-500">Skip to main content</a>
+        <a href="#step-content" class="px-4 py-2 bg-sky-600 text-white rounded-md shadow-lg mr-2 focus:outline-none focus:ring-2 focus:ring-sky-500">Skip to form</a>
+        <a href="#navigationContainer" class="px-4 py-2 bg-sky-600 text-white rounded-md shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-500">Skip to navigation</a>
+    </div>
 
     <div id="main-container" class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-h-screen">
+        <!-- Screen reader announcements -->
+        <div id="announcements" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
         <h1 class="text-3xl sm:text-4xl font-bold text-center mb-8 sm:mb-12 text-slate-800 dark:text-white">Transifex Ticket Builder</h1>
         
         <!-- Progress indicator -->
@@ -42,6 +50,8 @@
             </div>
         </div>
 
+        <!-- Step Content Area -->
+        <div id="step-content">
         <!-- Step 1: Report Type Selection -->
         <div id="step1" class="step-container">
             <div class="max-w-md mx-auto">
@@ -91,17 +101,17 @@
                     
                     <div id="externalFields" class="space-y-4">
                         <div>
-                            <label for="customerName" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Customer Name</label>
+                            <label for="customerName" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Customer Name <span class="text-red-500">*</span></label>
                             <input type="text" id="customerName" placeholder="Enter customer's org name" class="mt-1 block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white">
                         </div>
                         <div>
-                            <label for="monthlyARR" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Monthly ARR ($)</label>
-                            <input type="number" id="monthlyARR" placeholder="Enter monthly ARR" class="mt-1 block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                            <label for="monthlyARR" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Monthly ARR ($) <span class="text-red-500">*</span></label>
+                            <input type="number" id="monthlyARR" placeholder="Enter monthly ARR (e.g., 5000)" min="0" step="0.01" class="mt-1 block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
                         </div>
                         <div>
-                            <label for="planType" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Plan Type</label>
+                            <label for="planType" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Plan Type <span class="text-red-500">*</span></label>
                             <select id="planType" class="mt-1 block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white">
-                                <option value="">Select plan type (optional)</option>
+                                <option value="">Select plan type</option>
                                 <option value="Open Source">Open Source</option>
                                 <option value="Starter">Starter</option>
                                 <option value="Growth">Growth</option>
@@ -110,6 +120,20 @@
                             </select>
                             <div id="customPlanContainer" class="mt-3 hidden">
                                 <input type="text" id="customPlanText" placeholder="Enter custom plan type..." class="block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white">
+                                <div class="mt-3">
+                                    <label for="customPlanScore" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Priority Score (1-5) <span class="text-red-500">*</span></label>
+                                    <input type="number" id="customPlanScore" min="1" max="5" step="1" placeholder="Enter score 1-5" class="block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                                    <div id="planScoreContext" class="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md text-sm text-blue-700 dark:text-blue-300 hidden">
+                                        <p class="font-medium mb-2">Score reference for other plans:</p>
+                                        <ul class="space-y-1">
+                                            <li><strong>Enterprise+:</strong> 5 points</li>
+                                            <li><strong>Growth:</strong> 4 points</li>
+                                            <li><strong>Starter:</strong> 3 points</li>
+                                            <li><strong>Open Source:</strong> 2 points</li>
+                                            <li><strong>Internal:</strong> 1 point</li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -249,7 +273,8 @@
                 </div>
             </div>
         </div>
-        
+        </div> <!-- End step-content -->
+
         <!-- Navigation -->
         <div id="navigationContainer" class="max-w-2xl mx-auto mt-8 hidden">
             <div class="flex justify-between">
