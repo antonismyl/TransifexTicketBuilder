@@ -28,17 +28,6 @@ All notable changes to the Transifex Ticket Builder will be documented in this f
 - Image processing errors now show user-friendly messages
 - Form validation prevents submission with incomplete data
 
-### Security
-- Added comprehensive input sanitization to prevent XSS attacks
-- Implemented safe template generation with escaped user input
-
-### Technical
-- Refactored JavaScript code organization with logical sections
-- Enhanced error handling throughout the application
-- Improved accessibility with ARIA labels and keyboard navigation
-- Dynamic tab order management for form elements
-- Visibility detection system for proper tab flow
-
 ## [1.0.0] - 2024-09-16
 
 ### Added
