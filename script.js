@@ -47,10 +47,11 @@ const questions = [
 ];
 
 // Step configuration
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 7;
 const STEP_TITLES = [
     'Report Type',
     'Ticket Type',
+    'Due Diligence',
     'Customer Information',
     'Impact Assessment',
     'Documentation',
@@ -94,9 +95,14 @@ const appData = {
     planType: '',
     customPlanText: '',
     customPlanScore: 1,
-    intercomURL: '',
-    slackURL: '',
+    intercomURLs: [''],
+    slackURLs: [''],
     customerComment: '',
+    dueDiligence: {
+        checkedExistingTickets: false,
+        reviewedDocumentation: false,
+        checkedSlackDiscussions: false
+    },
     questionsAnswered: {},
     // Bug-specific fields
     bugSummary: '',
@@ -115,6 +121,9 @@ const appData = {
 
 // Image counter for unique IDs
 let imageCounter = 0;
+
+// EasyMDE instances
+const editors = {};
 
 // =============================================================================
 // UTILITY FUNCTIONS
@@ -142,8 +151,8 @@ function sanitizeAppData(appData) {
     const sanitizedData = {
         customerName: sanitizeInput(appData.customerName),
         customPlanText: sanitizeInput(appData.customPlanText),
-        intercomURL: sanitizeInput(appData.intercomURL),
-        slackURL: sanitizeInput(appData.slackURL),
+        intercomURLs: appData.intercomURLs.map(url => sanitizeInput(url)).filter(url => url.trim()),
+        slackURLs: appData.slackURLs.map(url => sanitizeInput(url)).filter(url => url.trim()),
         customerComment: sanitizeInput(appData.customerComment),
         bugSummary: sanitizeInput(appData.bugSummary),
         stepsToReproduce: sanitizeInput(appData.stepsToReproduce),
@@ -249,13 +258,38 @@ function validateCurrentStep(currentStep, appData) {
     let isValid = true;
 
     switch (currentStep) {
-        case 3: // Customer details
+        case 3: // Due diligence
+            if (appData.ticketType === 'new') {
+                const checkedExistingTickets = document.getElementById('checkedExistingTickets');
+                const reviewedDocumentation = document.getElementById('reviewedDocumentation');
+                const checkedSlackDiscussions = document.getElementById('checkedSlackDiscussions');
+
+                if (!checkedExistingTickets || !checkedExistingTickets.checked) {
+                    errors.push('Please confirm you have checked for pre-existing tickets');
+                    isValid = false;
+                }
+
+                if (!reviewedDocumentation || !reviewedDocumentation.checked) {
+                    errors.push('Please confirm you have reviewed the documentation');
+                    isValid = false;
+                }
+
+                if (!checkedSlackDiscussions || !checkedSlackDiscussions.checked) {
+                    errors.push('Please confirm you have checked Slack discussions');
+                    isValid = false;
+                }
+            }
+            // Skip due diligence for update tickets
+            break;
+
+        case 4: // Customer details
             const internalCheckbox = document.getElementById('internalReport');
             if (internalCheckbox && internalCheckbox.checked) {
                 // For story updates, customer comment is required
                 if (appData.reportType === 'story' && appData.ticketType === 'update') {
                     const customerComment = document.getElementById('customerComment');
-                    if (!customerComment || customerComment.value.trim() === '') {
+                    const value = editors.customerComment ? editors.customerComment.value() : (customerComment ? customerComment.value : '');
+                    if (!value.trim()) {
                         errors.push('Customer comment is required for story updates');
                         isValid = false;
                     }
@@ -305,15 +339,57 @@ function validateCurrentStep(currentStep, appData) {
                 // For story updates, customer comment is also required
                 if (appData.reportType === 'story' && appData.ticketType === 'update') {
                     const customerComment = document.getElementById('customerComment');
-                    if (!customerComment || customerComment.value.trim() === '') {
+                    const value = editors.customerComment ? editors.customerComment.value() : (customerComment ? customerComment.value : '');
+                    if (!value.trim()) {
                         errors.push('Customer comment is required for story updates');
                         isValid = false;
                     }
                 }
+
+                // Validate URL fields - ensure no empty fields between filled ones
+                const intercomURLs = collectURLValues('intercom');
+                const slackURLs = collectURLValues('slack');
+
+                // Check for gaps in URL arrays (empty fields between filled ones)
+                const intercomFields = document.querySelectorAll('#intercomURLsContainer input[type="text"]');
+                const slackFields = document.querySelectorAll('#slackURLsContainer input[type="text"]');
+
+                let hasIntercomGap = false;
+                let hasSlackGap = false;
+                let foundIntercomContent = false;
+                let foundSlackContent = false;
+
+                // Check Intercom URLs for gaps
+                Array.from(intercomFields).reverse().forEach(field => {
+                    if (field.value.trim()) {
+                        foundIntercomContent = true;
+                    } else if (foundIntercomContent) {
+                        hasIntercomGap = true;
+                    }
+                });
+
+                // Check Slack URLs for gaps
+                Array.from(slackFields).reverse().forEach(field => {
+                    if (field.value.trim()) {
+                        foundSlackContent = true;
+                    } else if (foundSlackContent) {
+                        hasSlackGap = true;
+                    }
+                });
+
+                if (hasIntercomGap) {
+                    errors.push('Please fill in all Intercom URL fields or remove empty ones');
+                    isValid = false;
+                }
+
+                if (hasSlackGap) {
+                    errors.push('Please fill in all Slack URL fields or remove empty ones');
+                    isValid = false;
+                }
             }
             break;
 
-        case 4: // Impact assessment or Story documentation
+        case 5: // Impact assessment or Story documentation
             if (appData.reportType === 'story') {
                 // For story updates, skip this step entirely
                 if (appData.ticketType === 'update') {
@@ -329,7 +405,8 @@ function validateCurrentStep(currentStep, appData) {
 
                 requiredFields.forEach(field => {
                     const element = document.getElementById(field.id);
-                    if (!element || element.value.trim() === '') {
+                    const value = editors[field.id] ? editors[field.id].value() : (element ? element.value : '');
+                    if (!value.trim()) {
                         errors.push(`${field.label} is required`);
                         isValid = false;
                     }
@@ -347,7 +424,7 @@ function validateCurrentStep(currentStep, appData) {
             }
             break;
 
-        case 5: // Bug documentation
+        case 6: // Bug documentation
             const requiredBugFields = [
                 { id: 'bugSummary', label: 'Summary' }
             ];
@@ -362,7 +439,8 @@ function validateCurrentStep(currentStep, appData) {
 
             requiredBugFields.forEach(field => {
                 const element = document.getElementById(field.id);
-                if (!element || element.value.trim() === '') {
+                const value = editors[field.id] ? editors[field.id].value() : (element ? element.value : '');
+                if (!value.trim()) {
                     errors.push(`${field.label} is required`);
                     isValid = false;
                 }
@@ -424,16 +502,25 @@ function replaceImagePlaceholders(text, appData) {
 // Event listener for when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded');
-    
+
     // Initialize dark mode based on system preference
     initDarkMode();
-    
+
     // Initialize step navigation
     initStepNavigation();
-    
+
     // Initialize questions
     initQuestions();
-    
+
+    // Initialize EasyMDE editors
+    initEasyMDE();
+
+    // Initialize dynamic URL fields
+    initDynamicURLFields();
+
+    // Initialize tooltips
+    initTooltips();
+
     // Set up event listeners
     setupEventListeners();
     
@@ -525,7 +612,7 @@ function setupEventListeners() {
         nextBtn.addEventListener('click', nextStep);
     }
 
-    // Step 5: Final actions
+    // Step 7: Final actions
     const copyBtn = document.getElementById('copyBtn');
     const startNewBtn = document.getElementById('startNewBtn');
     
@@ -565,9 +652,9 @@ function showStep(stepNumber) {
         currentStepElement.classList.remove('hidden');
     }
 
-    // Handle step 4 content based on report type
+    // Handle step 5 content based on report type
     if (stepNumber === 4) {
-        updateStep4Content();
+        updateStep5Content();
     }
 
     // Update progress and navigation
@@ -800,22 +887,27 @@ function nextStep() {
 
         let nextStepNumber = currentStep + 1;
 
-        // For story updates, skip steps 4 and 5 (go directly to final step)
-        if (appData.reportType === 'story' && appData.ticketType === 'update' && currentStep === 3) {
-            nextStepNumber = 6; // Skip to final step
+        // Skip due diligence step for update tickets
+        if (appData.ticketType === 'update' && currentStep === 2) {
+            nextStepNumber = 4; // Skip step 3 (due diligence)
         }
 
-        // For story updates, if somehow on step 4, skip to final step
+        // For story updates, skip steps 5 and 6 (go directly to final step)
         if (appData.reportType === 'story' && appData.ticketType === 'update' && currentStep === 4) {
-            nextStepNumber = 6;
+            nextStepNumber = 7; // Skip to final step
         }
 
-        // For story reports (new), skip step 5 (bug documentation)
-        if (appData.reportType === 'story' && appData.ticketType === 'new' && currentStep === 4) {
-            nextStepNumber = 6;
+        // For story updates, if somehow on step 5, skip to final step
+        if (appData.reportType === 'story' && appData.ticketType === 'update' && currentStep === 5) {
+            nextStepNumber = 7;
         }
 
-        if (nextStepNumber === 6) {
+        // For story reports (new), skip step 6 (bug documentation)
+        if (appData.reportType === 'story' && appData.ticketType === 'new' && currentStep === 5) {
+            nextStepNumber = 7;
+        }
+
+        if (nextStepNumber === 7) {
             // Generate final output before showing final step
             if (appData.reportType === 'bug') {
                 calculateScore(); // Only calculate score for bugs
@@ -824,13 +916,13 @@ function nextStep() {
             }
         }
 
-        if (currentStep === 5) {
+        if (currentStep === 6) {
             // Calculate score before showing final step (for bugs)
             calculateScore();
         }
 
         // Update UI based on ticket type when moving to bug documentation step
-        if (nextStepNumber === 5) {
+        if (nextStepNumber === 6) {
             updateBugDocumentationStep();
         }
 
@@ -867,24 +959,31 @@ function prevStep() {
  */
 function saveCurrentStepData() {
     switch (currentStep) {
-        case 3: // Customer details
+        case 3: // Due diligence
+            if (appData.ticketType === 'new') {
+                appData.dueDiligence.checkedExistingTickets = document.getElementById('checkedExistingTickets').checked;
+                appData.dueDiligence.reviewedDocumentation = document.getElementById('reviewedDocumentation').checked;
+                appData.dueDiligence.checkedSlackDiscussions = document.getElementById('checkedSlackDiscussions').checked;
+            }
+            break;
+        case 4: // Customer details
             appData.isInternal = document.getElementById('internalReport').checked;
             appData.customerName = document.getElementById('customerName').value;
             appData.monthlyARR = document.getElementById('monthlyARR').value;
             appData.planType = document.getElementById('planType').value;
             appData.customPlanText = document.getElementById('customPlanText').value;
             appData.customPlanScore = parseInt(document.getElementById('customPlanScore').value) || 1;
-            appData.intercomURL = document.getElementById('intercomURL').value;
-            appData.slackURL = document.getElementById('slackURL').value;
-            appData.customerComment = document.getElementById('customerComment').value;
+            appData.intercomURLs = collectURLValues('intercom');
+            appData.slackURLs = collectURLValues('slack');
+            appData.customerComment = editors.customerComment ? editors.customerComment.value() : document.getElementById('customerComment').value;
             break;
-        case 4: // Impact assessment or Story documentation
+        case 5: // Impact assessment or Story documentation
             if (appData.reportType === 'story') {
                 // Save story documentation fields
-                appData.storyDescription = document.getElementById('storyDescription').value;
-                appData.currentFunctionality = document.getElementById('currentFunctionality').value;
-                appData.expectedFunctionality = document.getElementById('expectedFunctionality').value;
-                appData.timelineContext = document.getElementById('timelineContext').value;
+                appData.storyDescription = editors.storyDescription ? editors.storyDescription.value() : document.getElementById('storyDescription').value;
+                appData.currentFunctionality = editors.currentFunctionality ? editors.currentFunctionality.value() : document.getElementById('currentFunctionality').value;
+                appData.expectedFunctionality = editors.expectedFunctionality ? editors.expectedFunctionality.value() : document.getElementById('expectedFunctionality').value;
+                appData.timelineContext = editors.timelineContext ? editors.timelineContext.value() : document.getElementById('timelineContext').value;
             } else {
                 // Save bug impact assessment questions
                 questions.forEach(question => {
@@ -895,32 +994,32 @@ function saveCurrentStepData() {
                 });
             }
             break;
-        case 5: // Bug documentation
-            appData.bugSummary = document.getElementById('bugSummary').value;
-            appData.stepsToReproduce = document.getElementById('stepsToReproduce').value;
-            appData.expectedVsActual = document.getElementById('expectedVsActual').value;
+        case 6: // Bug documentation
+            appData.bugSummary = editors.bugSummary ? editors.bugSummary.value() : document.getElementById('bugSummary').value;
+            appData.stepsToReproduce = editors.stepsToReproduce ? editors.stepsToReproduce.value() : document.getElementById('stepsToReproduce').value;
+            appData.expectedVsActual = editors.expectedVsActual ? editors.expectedVsActual.value() : document.getElementById('expectedVsActual').value;
             break;
     }
 }
 
 /**
- * Updates Step 4 content based on report type
+ * Updates Step 5 content based on report type
  */
-function updateStep4Content() {
+function updateStep5Content() {
     const questionsContainer = document.getElementById('questionsContainer');
     const storyContainer = document.getElementById('storyContainer');
-    const step4Title = document.getElementById('step4Title');
+    const step5Title = document.getElementById('step5Title');
 
     if (appData.reportType === 'story') {
         // Show story documentation, hide questions
         questionsContainer.classList.add('hidden');
         storyContainer.classList.remove('hidden');
-        step4Title.textContent = 'Story Documentation';
+        step5Title.textContent = 'Story Documentation';
     } else {
         // Show questions, hide story documentation
         questionsContainer.classList.remove('hidden');
         storyContainer.classList.add('hidden');
-        step4Title.textContent = 'Impact Assessment';
+        step5Title.textContent = 'Impact Assessment';
     }
 }
 
@@ -1040,6 +1139,70 @@ function initQuestions() {
 }
 
 /**
+ * Initializes EasyMDE editors for all textareas
+ */
+function initEasyMDE() {
+    const textareaConfigs = [
+        { id: 'customerComment', minHeight: '100px' },
+        { id: 'bugSummary', minHeight: '150px' },
+        { id: 'stepsToReproduce', minHeight: '150px' },
+        { id: 'expectedVsActual', minHeight: '150px', initialValue: '**Expected:**\n\n**Actual:**\n\n' },
+        { id: 'storyDescription', minHeight: '100px' },
+        { id: 'currentFunctionality', minHeight: '100px' },
+        { id: 'expectedFunctionality', minHeight: '100px' },
+        { id: 'timelineContext', minHeight: '100px' }
+    ];
+
+    textareaConfigs.forEach(config => {
+        const textarea = document.getElementById(config.id);
+        if (textarea) {
+            const editorConfig = {
+                element: textarea,
+                autofocus: false,
+                autoDownloadFontAwesome: true,
+                spellChecker: false,
+                status: false,
+                minHeight: config.minHeight,
+                toolbar: [
+                    'bold', 'italic', '|',
+                    'heading-1', 'heading-2', '|',
+                    'unordered-list', 'ordered-list', '|',
+                    'link', 'code', '|',
+                    'preview', 'side-by-side', 'fullscreen'
+                ],
+                shortcuts: {
+                    'toggleBold': 'Cmd-B',
+                    'toggleItalic': 'Cmd-I',
+                    'toggleCodeBlock': 'Cmd-Alt-C',
+                    'togglePreview': 'Cmd-P',
+                    'toggleSideBySide': 'F9',
+                    'toggleFullScreen': 'F11'
+                }
+            };
+
+            // Set initial value if specified
+            if (config.initialValue) {
+                editorConfig.initialValue = config.initialValue;
+            }
+
+            // Create the editor
+            const editor = new EasyMDE(editorConfig);
+            editors[config.id] = editor;
+
+            // Add change listener for form validation
+            editor.codemirror.on('change', () => {
+                updateNavigation();
+            });
+        }
+    });
+
+    // Add image paste support after all editors are created
+    setTimeout(() => {
+        addImagePasteSupport();
+    }, 100);
+}
+
+/**
  * Calculates the bug score and generates the final output
  */
 function calculateScore() {
@@ -1081,8 +1244,8 @@ function generateFinalOutput() {
     }
 
     const annualARR = appData.isInternal ? 0 : (parseFloat(appData.monthlyARR || 0) * 12);
-    const intercomURL = sanitized.intercomURL || 'N/A';
-    const slackURL = sanitized.slackURL || 'N/A';
+    const intercomLinks = formatURLsAsJIRALinks(sanitized.intercomURLs, 'intercom');
+    const slackLinks = formatURLsAsJIRALinks(sanitized.slackURLs, 'slack');
     const customerComment = sanitized.customerComment || '';
 
     // Create template based on report type
@@ -1092,9 +1255,9 @@ function generateFinalOutput() {
         // Story template
         if (appData.ticketType === 'update') {
             // Story update: Only customer details + comment
-            template = `## ${customerInfo}, ${plan}, $${annualARR.toFixed(2)}
-**Intercom URL:** ${intercomURL}
-**Slack URL:** ${slackURL}`;
+            template = `## ${customerInfo}, Plan: ${plan}, ARR: $${annualARR.toFixed(2)}
+**Intercom Links:** ${intercomLinks}
+**Slack Links:** ${slackLinks}`;
             if (customerComment.trim() !== '') {
                 template += `\n**Comment:** ${customerComment}`;
             }
@@ -1112,9 +1275,9 @@ ${sanitized.expectedFunctionality}
 ## Timeline & Context
 ${sanitized.timelineContext}
 
-## ${customerInfo}, ${plan}, $${annualARR.toFixed(2)}
-**Intercom URL:** ${intercomURL}
-**Slack URL:** ${slackURL}`;
+## ${customerInfo}, Plan: ${plan}, ARR: $${annualARR.toFixed(2)}
+**Intercom Links:** ${intercomLinks}
+**Slack Links:** ${slackLinks}`;
             if (customerComment.trim() !== '') {
                 template += `\n**Comment:** ${customerComment}`;
             }
@@ -1135,9 +1298,9 @@ ${sanitized.timelineContext}
 
         if (appData.ticketType === 'update') {
             // For bug update tickets: Customer details + Questionnaire + Summary only
-            template = `## ${customerInfo}, ${plan}, $${annualARR.toFixed(2)}
-**Intercom URL:** ${intercomURL}
-**Slack URL:** ${slackURL}`;
+            template = `## ${customerInfo}, Plan: ${plan}, ARR: $${annualARR.toFixed(2)}
+**Intercom Links:** ${intercomLinks}
+**Slack Links:** ${slackLinks}`;
             if (customerComment.trim() !== '') {
                 template += `\n**Comment:** ${customerComment}`;
             }
@@ -1158,9 +1321,9 @@ ${sanitized.stepsToReproduce}
 ## Expected vs Actual Behavior
 ${sanitized.expectedVsActual}
 
-## ${customerInfo}, ${plan}, $${annualARR.toFixed(2)}
-**Intercom URL:** ${intercomURL}
-**Slack URL:** ${slackURL}`;
+## ${customerInfo}, Plan: ${plan}, ARR: $${annualARR.toFixed(2)}
+**Intercom Links:** ${intercomLinks}
+**Slack Links:** ${slackLinks}`;
             if (customerComment.trim() !== '') {
                 template += `\n**Comment:** ${customerComment}`;
             }
@@ -1300,12 +1463,12 @@ function showCopyFeedback() {
     
     const originalText = copyBtn.innerHTML;
     copyBtn.innerHTML = '✅ Copied!';
-    copyBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+    copyBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
     copyBtn.classList.remove('bg-sky-500', 'hover:bg-sky-600');
 
     setTimeout(() => {
         copyBtn.innerHTML = originalText;
-        copyBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+        copyBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
         copyBtn.classList.add('bg-sky-500', 'hover:bg-sky-600');
     }, 2000);
 }
@@ -1324,9 +1487,14 @@ function startNewReport() {
         planType: '',
         customPlanText: '',
         customPlanScore: 1,
-        intercomURL: '',
-        slackURL: '',
+        intercomURLs: [''],
+        slackURLs: [''],
         customerComment: '',
+        dueDiligence: {
+            checkedExistingTickets: false,
+            reviewedDocumentation: false,
+            checkedSlackDiscussions: false
+        },
         questionsAnswered: {},
         // Bug-specific fields
         bugSummary: '',
@@ -1410,6 +1578,21 @@ document.addEventListener('DOMContentLoaded', function() {
             customerNameInput.addEventListener('input', updateNavigation);
         }
 
+        // Add due diligence checkboxes validation
+        const checkedExistingTickets = document.getElementById('checkedExistingTickets');
+        const reviewedDocumentation = document.getElementById('reviewedDocumentation');
+        const checkedSlackDiscussions = document.getElementById('checkedSlackDiscussions');
+
+        if (checkedExistingTickets) {
+            checkedExistingTickets.addEventListener('change', updateNavigation);
+        }
+        if (reviewedDocumentation) {
+            reviewedDocumentation.addEventListener('change', updateNavigation);
+        }
+        if (checkedSlackDiscussions) {
+            checkedSlackDiscussions.addEventListener('change', updateNavigation);
+        }
+
         // Add monthly ARR validation
         const monthlyARRInput = document.getElementById('monthlyARR');
         if (monthlyARRInput) {
@@ -1450,8 +1633,7 @@ document.addEventListener('DOMContentLoaded', function() {
             expectedVsActualInput.addEventListener('input', updateNavigation);
         }
         
-        // Add image paste functionality to textareas
-        addImagePasteSupport();
+        // Image paste functionality is now handled in initEasyMDE()
 
         // Add input event listeners for story fields
         addStoryFieldListeners();
@@ -1584,40 +1766,360 @@ function showImagePasteError(textarea, message = 'Error processing image') {
  * Adds image paste functionality to all textareas
  */
 function addImagePasteSupport() {
-    const textareas = ['bugSummary', 'stepsToReproduce', 'expectedVsActual', 'storyDescription', 'currentFunctionality', 'expectedFunctionality', 'timelineContext', 'customerComment'];
+    const editorIds = ['bugSummary', 'stepsToReproduce', 'expectedVsActual', 'storyDescription', 'currentFunctionality', 'expectedFunctionality', 'timelineContext', 'customerComment'];
 
-    textareas.forEach(textareaId => {
-        const textarea = document.getElementById(textareaId);
-        if (textarea) {
-            // Add paste event listener
-            textarea.addEventListener('paste', handleImagePaste);
-
-            // Add drag and drop support
-            textarea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                textarea.classList.add('drag-over');
+    editorIds.forEach(editorId => {
+        const editor = editors[editorId];
+        if (editor && editor.codemirror) {
+            // Add paste event listener to the CodeMirror instance
+            editor.codemirror.on('paste', (cm, event) => {
+                handleImagePasteForEditor(event, editor, editorId);
             });
 
-            textarea.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                textarea.classList.remove('drag-over');
-            });
-
-            textarea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                textarea.classList.remove('drag-over');
-
-                const files = Array.from(e.dataTransfer.files);
-                const imageFiles = files.filter(file => file.type.startsWith('image/'));
-
-                imageFiles.forEach(file => {
-                    insertImageFromFile(file, textarea);
+            // Add drag and drop support to the CodeMirror wrapper
+            const wrapper = editor.codemirror.getWrapperElement();
+            if (wrapper) {
+                wrapper.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    wrapper.classList.add('drag-over');
                 });
-            });
+
+                wrapper.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    wrapper.classList.remove('drag-over');
+                });
+
+                wrapper.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    wrapper.classList.remove('drag-over');
+
+                    const files = Array.from(e.dataTransfer.files);
+                    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+
+                    imageFiles.forEach(file => {
+                        insertImageFromFileForEditor(file, editor, editorId);
+                    });
+                });
+            }
         }
+    });
+}
+
+/**
+ * Handles image paste events for EasyMDE editors
+ */
+function handleImagePasteForEditor(event, editor, editorId) {
+    const clipboardData = event.clipboardData || window.clipboardData;
+    if (!clipboardData) return;
+
+    const items = Array.from(clipboardData.items);
+    const imageItems = items.filter(item => item.type.startsWith('image/'));
+
+    if (imageItems.length > 0) {
+        event.preventDefault();
+        imageItems.forEach(item => {
+            const file = item.getAsFile();
+            if (file) {
+                insertImageFromFileForEditor(file, editor, editorId);
+            }
+        });
+    }
+}
+
+/**
+ * Inserts an image from a file into an EasyMDE editor
+ */
+function insertImageFromFileForEditor(file, editor, editorId) {
+    // Validate file
+    const validation = validateImageFile(file);
+    if (!validation.isValid) {
+        showImagePasteErrorForEditor(editor, validation.errors[0]);
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        try {
+            const base64Data = e.target.result;
+
+            // Generate unique image ID and filename
+            const imageId = `img_${Date.now()}_${imageCounter++}`;
+            const fileName = file.name || `image_${imageId}.${file.type.split('/')[1]}`;
+
+            // Store image data
+            appData.images[imageId] = {
+                fileName: fileName,
+                base64Data: base64Data
+            };
+
+            // Insert image placeholder into editor
+            const imagePlaceholder = `[Image: ${fileName}]`;
+            const cursor = editor.codemirror.getCursor();
+            editor.codemirror.replaceRange(imagePlaceholder + '\n\n', cursor);
+
+            // Move cursor after the inserted placeholder
+            const newLine = cursor.line + 2;
+            editor.codemirror.setCursor(newLine, 0);
+            editor.codemirror.focus();
+
+            // Show feedback
+            showImagePasteFeedbackForEditor(editor, 'Image added successfully!');
+        } catch (error) {
+            console.error('Error processing image:', error);
+            showImagePasteErrorForEditor(editor, 'Failed to process image. Please try again.');
+        }
+    };
+
+    reader.onerror = function(error) {
+        console.error('FileReader error:', error);
+        showImagePasteErrorForEditor(editor, 'Error reading image file. Please try again.');
+    };
+
+    reader.readAsDataURL(file);
+}
+
+/**
+ * Shows feedback when an image is successfully pasted into EasyMDE
+ */
+function showImagePasteFeedbackForEditor(editor, message = 'Image added successfully!') {
+    const wrapper = editor.codemirror.getWrapperElement();
+    const originalBorder = wrapper.style.border;
+    wrapper.style.border = '2px solid #10b981';
+
+    // Show user feedback message
+    showUserMessage(message, 'success');
+
+    setTimeout(() => {
+        wrapper.style.border = originalBorder;
+    }, 1000);
+}
+
+/**
+ * Shows error feedback when image paste fails in EasyMDE
+ */
+function showImagePasteErrorForEditor(editor, message = 'Error processing image') {
+    const wrapper = editor.codemirror.getWrapperElement();
+    const originalBorder = wrapper.style.border;
+    wrapper.style.border = '2px solid #ef4444';
+
+    // Show user error message
+    showUserMessage(message, 'error');
+
+    setTimeout(() => {
+        wrapper.style.border = originalBorder;
+    }, 1000);
+}
+
+/**
+ * Initializes dynamic URL field functionality
+ */
+function initDynamicURLFields() {
+    let intercomCount = 1;
+    let slackCount = 1;
+
+    // Add Intercom URL field
+    document.getElementById('addIntercomURL').addEventListener('click', function() {
+        const container = document.getElementById('intercomURLsContainer');
+        const fieldDiv = document.createElement('div');
+        fieldDiv.className = 'intercom-url-field mb-3';
+        fieldDiv.innerHTML = `
+            <div class="flex gap-2">
+                <input type="text" id="intercomURL${intercomCount}" placeholder="Enter Intercom URL" class="flex-1 px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white">
+                <button type="button" class="remove-intercom-btn bg-red-500 hover:bg-red-600 text-white px-3 py-2.5 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500">Remove</button>
+            </div>
+        `;
+        container.appendChild(fieldDiv);
+        intercomCount++;
+        updateRemoveButtonsVisibility();
+        updateNavigation();
+    });
+
+    // Add Slack URL field
+    document.getElementById('addSlackURL').addEventListener('click', function() {
+        const container = document.getElementById('slackURLsContainer');
+        const fieldDiv = document.createElement('div');
+        fieldDiv.className = 'slack-url-field mb-3';
+        fieldDiv.innerHTML = `
+            <div class="flex gap-2">
+                <input type="text" id="slackURL${slackCount}" placeholder="Enter Slack URL" class="flex-1 px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white">
+                <button type="button" class="remove-slack-btn bg-red-500 hover:bg-red-600 text-white px-3 py-2.5 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500">Remove</button>
+            </div>
+        `;
+        container.appendChild(fieldDiv);
+        slackCount++;
+        updateRemoveButtonsVisibility();
+        updateNavigation();
+    });
+
+    // Handle remove buttons for Intercom URLs
+    document.getElementById('intercomURLsContainer').addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-intercom-btn')) {
+            e.target.closest('.intercom-url-field').remove();
+            updateRemoveButtonsVisibility();
+            updateNavigation();
+        }
+    });
+
+    // Handle remove buttons for Slack URLs
+    document.getElementById('slackURLsContainer').addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-slack-btn')) {
+            e.target.closest('.slack-url-field').remove();
+            updateRemoveButtonsVisibility();
+            updateNavigation();
+        }
+    });
+
+    // Show/hide remove buttons based on number of fields
+    function updateRemoveButtonsVisibility() {
+        const intercomFields = document.querySelectorAll('.intercom-url-field');
+        const slackFields = document.querySelectorAll('.slack-url-field');
+
+        // Show remove buttons only if more than one field exists
+        intercomFields.forEach((field, index) => {
+            const removeBtn = field.querySelector('.remove-intercom-btn');
+            if (intercomFields.length > 1) {
+                removeBtn.classList.remove('hidden');
+            } else {
+                removeBtn.classList.add('hidden');
+            }
+        });
+
+        slackFields.forEach((field, index) => {
+            const removeBtn = field.querySelector('.remove-slack-btn');
+            if (slackFields.length > 1) {
+                removeBtn.classList.remove('hidden');
+            } else {
+                removeBtn.classList.add('hidden');
+            }
+        });
+    }
+}
+
+/**
+ * Collects all URL values from dynamic fields
+ */
+function collectURLValues(type) {
+    const urls = [];
+    const fields = document.querySelectorAll(`#${type}URLsContainer input[type="text"]`);
+    fields.forEach(field => {
+        const value = field.value.trim();
+        if (value) {
+            urls.push(value);
+        }
+    });
+    return urls.length > 0 ? urls : [''];
+}
+
+/**
+ * Formats URLs as JIRA-compatible links
+ */
+function formatURLsAsJIRALinks(urls, type) {
+    if (!urls || urls.length === 0 || (urls.length === 1 && !urls[0])) {
+        return 'N/A';
+    }
+
+    const validUrls = urls.filter(url => url && url.trim());
+    if (validUrls.length === 0) {
+        return 'N/A';
+    }
+
+    const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+    return validUrls.map((url, index) => {
+        const linkText = index === 0 ? `${capitalizedType} Link` : `${capitalizedType} Link ${index + 1}`;
+        return `[${linkText}](${url})`;
+    }).join(' | ');
+}
+
+/**
+ * Initializes tooltip functionality
+ */
+function initTooltips() {
+    const tooltipContent = {
+        'existing-tickets': 'Search your ticketing system (JIRA, etc.) for similar issues, error messages, or feature requests. Look for keywords related to your problem and check if there are existing solutions or workarounds.',
+        'documentation': 'Check both public and internal documentation for relevant information:<br><br>' +
+                        '• <a href="https://help.transifex.com/en/" target="_blank">Help Center</a> - Public documentation and guides<br>' +
+                        '• <a href="https://xtm-cloud.atlassian.net/wiki/spaces/IKB/pages/4168941583/Help+Center" target="_blank">Internal Docs</a> - Internal knowledge base<br><br>' +
+                        'Pay special attention to new/actively developed features or old/obscure/unfamiliar functionality.',
+        'slack-discussions': 'Search relevant Slack channels for discussions about your issue. Look for recent conversations, solutions shared by teammates, or additional context that might help resolve the problem.'
+    };
+
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-tooltip]')) {
+            e.preventDefault();
+            const button = e.target.closest('[data-tooltip]');
+            const tooltipType = button.getAttribute('data-tooltip');
+            const content = tooltipContent[tooltipType];
+
+            if (content) {
+                showTooltip(button, content);
+            }
+        } else {
+            // Hide any visible tooltips when clicking elsewhere
+            hideAllTooltips();
+        }
+    });
+}
+
+/**
+ * Shows a tooltip with the given content
+ */
+function showTooltip(button, content) {
+    // Hide any existing tooltips first
+    hideAllTooltips();
+
+    const tooltip = document.createElement('div');
+    tooltip.className = 'tooltip';
+    tooltip.innerHTML = content;
+
+    // Position the tooltip
+    document.body.appendChild(tooltip);
+
+    const buttonRect = button.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+
+    // Position to the right of the button, vertically centered
+    let left = buttonRect.right + 12;
+    let top = buttonRect.top + (buttonRect.height / 2) - (tooltipRect.height / 2);
+
+    // If tooltip would go off the right edge, position it to the left of the button
+    if (left + tooltipRect.width > window.innerWidth - 8) {
+        left = buttonRect.left - tooltipRect.width - 12;
+    }
+
+    // Adjust vertical position if tooltip would go off screen
+    if (top < 8) top = 8;
+    if (top + tooltipRect.height > window.innerHeight - 8) {
+        top = window.innerHeight - tooltipRect.height - 8;
+    }
+
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+
+    // Show tooltip with animation
+    setTimeout(() => {
+        tooltip.classList.add('show');
+    }, 10);
+
+    // Mark this tooltip for cleanup
+    tooltip.setAttribute('data-active-tooltip', 'true');
+}
+
+/**
+ * Hides all visible tooltips
+ */
+function hideAllTooltips() {
+    const tooltips = document.querySelectorAll('[data-active-tooltip]');
+    tooltips.forEach(tooltip => {
+        tooltip.classList.remove('show');
+        setTimeout(() => {
+            if (tooltip.parentNode) {
+                tooltip.parentNode.removeChild(tooltip);
+            }
+        }, 200);
     });
 }
 

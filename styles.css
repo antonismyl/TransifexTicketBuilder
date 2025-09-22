@@ -50,7 +50,192 @@ textarea {
 }
 
 /* Visual enhancement for drag and drop */
-textarea.drag-over {
+textarea.drag-over, .CodeMirror-wrap.drag-over {
     background-color: #f0f9ff !important;
     border-color: #0ea5e9 !important;
+}
+
+/* EasyMDE theme integration */
+.editor-toolbar {
+    border-color: rgb(203 213 225) !important;
+}
+
+.dark .editor-toolbar {
+    background-color: rgb(51 65 85) !important;
+    border-color: rgb(71 85 105) !important;
+}
+
+.dark .editor-toolbar button {
+    color: rgb(203 213 225) !important;
+    opacity: 1 !important;
+}
+
+.dark .editor-toolbar button:hover {
+    background-color: rgb(71 85 105) !important;
+    color: white !important;
+}
+
+.dark .editor-toolbar button.active {
+    background-color: rgb(71 85 105) !important;
+    color: white !important;
+}
+
+/* Fix for FontAwesome 4 icons in dark mode - EasyMDE uses pseudo-elements */
+.dark .editor-toolbar button:before,
+.dark .editor-toolbar button i:before {
+    color: rgb(203 213 225) !important;
+}
+
+.dark .editor-toolbar button:hover:before,
+.dark .editor-toolbar button.active:before,
+.dark .editor-toolbar button:hover i:before,
+.dark .editor-toolbar button.active i:before {
+    color: white !important;
+}
+
+/* Fix for FontAwesome icons in dark mode */
+.dark .editor-toolbar button i {
+    color: rgb(203 213 225) !important;
+}
+
+.dark .editor-toolbar button:hover i,
+.dark .editor-toolbar button.active i {
+    color: white !important;
+}
+
+/* Ensure FontAwesome font family is preserved */
+.dark .editor-toolbar .fa:before {
+    font-family: FontAwesome !important;
+    color: rgb(203 213 225) !important;
+}
+
+.dark .editor-toolbar button:hover .fa:before,
+.dark .editor-toolbar button.active .fa:before {
+    color: white !important;
+}
+
+/* Ensure separator visibility in dark mode */
+.dark .editor-toolbar i.separator {
+    border-left-color: rgb(71 85 105) !important;
+}
+
+.dark .CodeMirror {
+    background-color: rgb(51 65 85) !important;
+    color: white !important;
+    border-color: rgb(71 85 105) !important;
+}
+
+.CodeMirror {
+    border-color: rgb(203 213 225) !important;
+    font-family: 'Inter', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+}
+
+.dark .CodeMirror-cursor {
+    border-left-color: white !important;
+}
+
+/* EasyMDE drag and drop styling */
+.CodeMirror-wrap.drag-over {
+    background-color: #f0f9ff;
+    border-color: #0ea5e9;
+}
+
+.dark .CodeMirror-wrap.drag-over {
+    background-color: rgb(30 58 138 / 0.2);
+    border-color: #0ea5e9;
+}
+
+/* EasyMDE Preview Mode Styling */
+.editor-preview, .editor-preview-side {
+    background-color: white !important;
+    color: #374151 !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+    padding: 15px !important;
+    box-sizing: border-box !important;
+    border: 1px solid rgb(203 213 225) !important;
+    border-radius: 6px !important;
+}
+
+/* Dark theme preview styling */
+.dark .editor-preview, .dark .editor-preview-side {
+    background-color: rgb(51 65 85) !important;
+    color: white !important;
+    border-color: rgb(71 85 105) !important;
+}
+
+/* Preview content styling */
+.editor-preview h1, .editor-preview-side h1,
+.editor-preview h2, .editor-preview-side h2,
+.editor-preview h3, .editor-preview-side h3 {
+    color: inherit !important;
+    margin-top: 1.5em !important;
+    margin-bottom: 0.5em !important;
+}
+
+.editor-preview p, .editor-preview-side p {
+    margin-bottom: 1em !important;
+}
+
+.editor-preview ul, .editor-preview-side ul,
+.editor-preview ol, .editor-preview-side ol {
+    margin: 1em 0 !important;
+    padding-left: 2em !important;
+}
+
+.editor-preview code, .editor-preview-side code {
+    background-color: rgb(243 244 246) !important;
+    padding: 2px 4px !important;
+    border-radius: 3px !important;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+}
+
+.dark .editor-preview code, .dark .editor-preview-side code {
+    background-color: rgb(71 85 105) !important;
+    color: rgb(226 232 240) !important;
+}
+
+.editor-preview pre, .editor-preview-side pre {
+    background-color: rgb(243 244 246) !important;
+    padding: 1em !important;
+    border-radius: 6px !important;
+    overflow-x: auto !important;
+}
+
+.dark .editor-preview pre, .dark .editor-preview-side pre {
+    background-color: rgb(71 85 105) !important;
+}
+
+/* Tooltip Styling */
+.tooltip {
+    position: absolute;
+    z-index: 1000;
+    background-color: rgb(51 65 85);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1.4;
+    max-width: 300px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    transform: translateY(-5px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+}
+
+.tooltip.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.tooltip a {
+    color: rgb(125 211 252);
+    text-decoration: underline;
+}
+
+.tooltip a:hover {
+    color: white;
 }

@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
     <link rel="stylesheet" href="styles.css">
     <script>
         // Tailwind CSS Configuration (remains here for CDN usage)
@@ -75,7 +76,7 @@
                 <div class="bg-white dark:bg-slate-800 shadow-xl rounded-xl p-8 text-center">
                     <h2 class="text-2xl font-semibold mb-6 text-slate-700 dark:text-slate-200">What type of ticket?</h2>
                     <div class="space-y-4">
-                        <button id="selectNewTicketBtn" class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-6 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-green-500 transition duration-150 ease-in-out text-lg">
+                        <button id="selectNewTicketBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-4 px-6 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-emerald-600 transition duration-150 ease-in-out text-lg">
                             🆕 Create New Ticket
                         </button>
                         <button id="selectUpdateTicketBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-4 px-6 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-blue-500 transition duration-150 ease-in-out text-lg">
@@ -86,9 +87,72 @@
             </div>
         </div>
 
-        <!-- Step 3: Customer Details -->
+        <!-- Step 3: Due Diligence -->
         <div id="step3" class="step-container hidden">
-            <div class="max-w-2xl mx-auto">
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-white dark:bg-slate-800 shadow-xl rounded-xl p-8">
+                    <div class="text-center mb-8">
+                        <div class="text-4xl mb-4">⚠️</div>
+                        <h2 class="text-2xl font-semibold mb-3 text-slate-700 dark:text-slate-200">Due Diligence Checklist</h2>
+                        <p class="text-slate-600 dark:text-slate-400">Please confirm you have completed the following before proceeding</p>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="flex items-start space-x-4 p-4 border border-slate-200 dark:border-slate-600 rounded-lg">
+                            <input type="checkbox" id="checkedExistingTickets" class="h-5 w-5 text-sky-600 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-sky-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 rounded mt-1">
+                            <div class="flex-1">
+                                <label for="checkedExistingTickets" class="flex items-center cursor-pointer">
+                                    <span class="text-base font-medium text-slate-700 dark:text-slate-200">Checked for pre-existing tickets</span>
+                                    <button type="button" class="ml-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" data-tooltip="existing-tickets">
+                                        <span class="sr-only">Help</span>
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </button>
+                                </label>
+                                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">I have searched for similar or duplicate issues</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start space-x-4 p-4 border border-slate-200 dark:border-slate-600 rounded-lg">
+                            <input type="checkbox" id="reviewedDocumentation" class="h-5 w-5 text-sky-600 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-sky-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 rounded mt-1">
+                            <div class="flex-1">
+                                <label for="reviewedDocumentation" class="flex items-center cursor-pointer">
+                                    <span class="text-base font-medium text-slate-700 dark:text-slate-200">Reviewed documentation</span>
+                                    <button type="button" class="ml-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" data-tooltip="documentation">
+                                        <span class="sr-only">Help</span>
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </button>
+                                </label>
+                                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">I have consulted Help Center and internal documentation</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start space-x-4 p-4 border border-slate-200 dark:border-slate-600 rounded-lg">
+                            <input type="checkbox" id="checkedSlackDiscussions" class="h-5 w-5 text-sky-600 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-sky-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 rounded mt-1">
+                            <div class="flex-1">
+                                <label for="checkedSlackDiscussions" class="flex items-center cursor-pointer">
+                                    <span class="text-base font-medium text-slate-700 dark:text-slate-200">Checked Slack discussions</span>
+                                    <button type="button" class="ml-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" data-tooltip="slack-discussions">
+                                        <span class="sr-only">Help</span>
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </button>
+                                </label>
+                                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">I have searched Slack for relevant discussions or context</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Customer Details -->
+        <div id="step4" class="step-container hidden">
+            <div class="max-w-4xl mx-auto">
                 <div class="bg-white dark:bg-slate-800 shadow-xl rounded-xl p-8">
                     <h2 class="text-2xl font-semibold mb-6 text-slate-700 dark:text-slate-200">Customer Details</h2>
                     
@@ -140,12 +204,28 @@
                     
                     <div class="space-y-4 mt-4">
                         <div>
-                            <label for="intercomURL" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Intercom URL</label>
-                            <input type="text" id="intercomURL" placeholder="Enter Intercom URL" class="mt-1 block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white">
+                            <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">Intercom URLs</label>
+                            <div id="intercomURLsContainer">
+                                <div class="intercom-url-field mb-3">
+                                    <div class="flex gap-2">
+                                        <input type="text" id="intercomURL0" placeholder="Enter Intercom URL" class="flex-1 px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white">
+                                        <button type="button" class="remove-intercom-btn hidden bg-red-500 hover:bg-red-600 text-white px-3 py-2.5 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500">Remove</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" id="addIntercomURL" class="mt-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-600">+ Add another URL</button>
                         </div>
                         <div>
-                            <label for="slackURL" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Slack URL</label>
-                            <input type="text" id="slackURL" placeholder="Enter Slack URL" class="mt-1 block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white">
+                            <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">Slack URLs</label>
+                            <div id="slackURLsContainer">
+                                <div class="slack-url-field mb-3">
+                                    <div class="flex gap-2">
+                                        <input type="text" id="slackURL0" placeholder="Enter Slack URL" class="flex-1 px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white">
+                                        <button type="button" class="remove-slack-btn hidden bg-red-500 hover:bg-red-600 text-white px-3 py-2.5 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500">Remove</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" id="addSlackURL" class="mt-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-600">+ Add another URL</button>
                         </div>
                         <div>
                             <label for="customerComment" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Customer Comment</label>
@@ -157,11 +237,11 @@
             </div>
         </div>
 
-        <!-- Step 4: Impact Assessment / Story Documentation -->
-        <div id="step4" class="step-container hidden">
+        <!-- Step 5: Impact Assessment / Story Documentation -->
+        <div id="step5" class="step-container hidden">
             <div class="max-w-4xl mx-auto">
                 <div class="bg-white dark:bg-slate-800 shadow-xl rounded-xl p-8">
-                    <h2 id="step4Title" class="text-2xl font-semibold mb-6 text-slate-700 dark:text-slate-200">Impact Assessment</h2>
+                    <h2 id="step5Title" class="text-2xl font-semibold mb-6 text-slate-700 dark:text-slate-200">Impact Assessment</h2>
 
                     <!-- Bug Assessment Questions -->
                     <div id="questionsContainer" class="space-y-6">
@@ -200,8 +280,8 @@
             </div>
         </div>
 
-        <!-- Step 5: Bug Documentation -->
-        <div id="step5" class="step-container hidden">
+        <!-- Step 6: Bug Documentation -->
+        <div id="step6" class="step-container hidden">
             <div class="max-w-4xl mx-auto">
                 <div class="bg-white dark:bg-slate-800 shadow-xl rounded-xl p-8">
                     <h2 class="text-2xl font-semibold mb-6 text-slate-700 dark:text-slate-200">Bug Documentation</h2>
@@ -231,8 +311,8 @@
             </div>
         </div>
 
-        <!-- Step 6: Final Output -->
-        <div id="step6" class="step-container hidden">
+        <!-- Step 7: Final Output -->
+        <div id="step7" class="step-container hidden">
             <div class="max-w-4xl mx-auto">
                 <div class="space-y-6">
                     <!-- Score and Priority Display -->
@@ -265,7 +345,7 @@
                             <button id="copyBtn" class="flex-1 bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-sky-500 transition duration-150 ease-in-out">
                                 📋 Copy to Clipboard
                             </button>
-                            <button id="startNewBtn" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-green-500 transition duration-150 ease-in-out">
+                            <button id="startNewBtn" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-emerald-600 transition duration-150 ease-in-out">
                                 🆕 Start New Report
                             </button>
                         </div>
@@ -288,6 +368,7 @@
         </div>
     </div>
 
+    <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

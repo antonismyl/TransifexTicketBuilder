@@ -2,6 +2,28 @@
 
 All notable changes to the Transifex Ticket Builder will be documented in this file.
 
+## [1.2.0] - 2025-09-22
+
+### Added
+- Rich text editing with EasyMDE markdown editor for all text fields
+- Due Diligence step (Step 3) with quality control checkboxes for new tickets
+- Interactive help tooltips for due diligence requirements
+- Auto-expanding text areas and improved editor experience
+- Enhanced dark theme support for EasyMDE components
+- Image drag & drop and paste support integrated with markdown editor
+
+### Changed
+- Expanded from 6-step to 7-step workflow to accommodate Due Diligence
+- Updated container widths for better content layout (max-w-2xl → max-w-4xl)
+- Improved button colors from bright green to muted emerald tones
+- Enhanced tooltip positioning (now appears on right side of help buttons)
+
+### Fixed
+- Dark theme EasyMDE toolbar icons now properly visible
+- Prevented duplicate image pasting in text editors
+- Fixed step navigation validation for new workflow
+- Corrected HTML step IDs for proper page transitions
+
 ## [1.1.0] - 2025-09-17
 
 ### Added
