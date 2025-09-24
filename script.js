@@ -74,10 +74,10 @@ const PLAN_SCORES = {
 
 // Priority thresholds
 const PRIORITY_THRESHOLDS = {
-    SEVERE: 100,
-    HIGH: 50,
-    MEDIUM: 20,
-    LOW: 0
+    HIGH: 100,
+    MEDIUM: 50,
+    LOW: 20,
+    TRIVIAL: 1
 };
 
 // Step management
@@ -89,6 +89,7 @@ const stepTitles = STEP_TITLES;
 const appData = {
     reportType: 'bug',
     ticketType: 'new', // 'new' or 'update'
+    isQuickCalc: false, // Quick calculator mode
     isInternal: false,
     customerName: '',
     monthlyARR: '',
@@ -217,12 +218,13 @@ function calculateBugScore(appData) {
 }
 
 /**
- * Determines the priority level and corresponding CSS classes based on the score.
+ * Determines the priority level and corresponding CSS classes based on the score and blocker status.
  */
-function getPriority(score) {
+function getPriority(score, isBlocker = false) {
     const baseClasses = "p-4 rounded-lg shadow-md border-l-4 mb-4 text-sm";
 
-    if (score >= PRIORITY_THRESHOLDS.SEVERE) {
+    // Severe priority is assigned when "This is a blocker" option is selected
+    if (isBlocker) {
         return {
             text: 'Severe',
             classList: `${baseClasses} bg-red-100 dark:bg-red-800/70 border-red-500 dark:border-red-500 text-red-700 dark:text-red-200`
@@ -237,7 +239,7 @@ function getPriority(score) {
             text: 'Medium',
             classList: `${baseClasses} bg-amber-100 dark:bg-amber-800/70 border-amber-500 dark:border-amber-500 text-amber-700 dark:text-amber-200`
         };
-    } else if (score > PRIORITY_THRESHOLDS.LOW) {
+    } else if (score >= PRIORITY_THRESHOLDS.LOW) {
         return {
             text: 'Low',
             classList: `${baseClasses} bg-sky-100 dark:bg-sky-800/70 border-sky-500 dark:border-sky-500 text-sky-700 dark:text-sky-200`
@@ -555,10 +557,12 @@ function setupEventListeners() {
     // Step 1: Report type selection
     const selectBugBtn = document.getElementById('selectBugBtn');
     const selectStoryBtn = document.getElementById('selectStoryBtn');
+    const selectQuickCalcBtn = document.getElementById('selectQuickCalcBtn');
 
     if (selectBugBtn) {
         selectBugBtn.addEventListener('click', () => {
             appData.reportType = 'bug';
+            appData.isQuickCalc = false;
             nextStep();
         });
     }
@@ -566,7 +570,16 @@ function setupEventListeners() {
     if (selectStoryBtn) {
         selectStoryBtn.addEventListener('click', () => {
             appData.reportType = 'story';
+            appData.isQuickCalc = false;
             nextStep();
+        });
+    }
+
+    if (selectQuickCalcBtn) {
+        selectQuickCalcBtn.addEventListener('click', () => {
+            appData.reportType = 'bug'; // Quick calc uses bug logic for scoring
+            appData.isQuickCalc = true;
+            showStep(8); // Go directly to quick calc step
         });
     }
 
@@ -603,23 +616,74 @@ function setupEventListeners() {
     // Navigation buttons
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
-    
+    const startFreshBtn = document.getElementById('startFreshBtn');
+
     if (prevBtn) {
         prevBtn.addEventListener('click', prevStep);
     }
-    
+
     if (nextBtn) {
         nextBtn.addEventListener('click', nextStep);
+    }
+
+    if (startFreshBtn) {
+        startFreshBtn.addEventListener('click', startNewReport);
+    }
+
+    // Confirmation modal buttons
+    const confirmResetBtn = document.getElementById('confirmResetBtn');
+    const cancelResetBtn = document.getElementById('cancelResetBtn');
+
+    if (confirmResetBtn) {
+        confirmResetBtn.addEventListener('click', function() {
+            hideResetConfirmationModal();
+            startNewReport(); // Reset and go to step 1
+        });
+    }
+
+    if (cancelResetBtn) {
+        cancelResetBtn.addEventListener('click', function() {
+            hideResetConfirmationModal();
+            // Stay on current step - no action needed
+        });
+    }
+
+    // Close modal when clicking outside
+    const confirmationModal = document.getElementById('confirmationModal');
+    if (confirmationModal) {
+        confirmationModal.addEventListener('click', function(e) {
+            if (e.target === confirmationModal) {
+                hideResetConfirmationModal();
+            }
+        });
+    }
+
+    // Quick calculator navigation buttons
+    const quickStep8PrevBtn = document.getElementById('quickStep8PrevBtn');
+    const quickStep9PrevBtn = document.getElementById('quickStep9PrevBtn');
+
+    if (quickStep8PrevBtn) {
+        quickStep8PrevBtn.addEventListener('click', function() {
+            // Go back to step 1 (start)
+            showStep(1);
+        });
+    }
+
+    if (quickStep9PrevBtn) {
+        quickStep9PrevBtn.addEventListener('click', function() {
+            // Go back to step 8 (questionnaire)
+            showStep(8);
+        });
     }
 
     // Step 7: Final actions
     const copyBtn = document.getElementById('copyBtn');
     const startNewBtn = document.getElementById('startNewBtn');
-    
+
     if (copyBtn) {
         copyBtn.addEventListener('click', copyToClipboard);
     }
-    
+
     if (startNewBtn) {
         startNewBtn.addEventListener('click', startNewReport);
     }
@@ -638,13 +702,18 @@ function initStepNavigation() {
 function showStep(stepNumber) {
     currentStep = stepNumber;
 
-    // Hide all steps
+    // Hide all steps (including quick calc steps 8 and 9)
     for (let i = 1; i <= totalSteps; i++) {
         const stepElement = document.getElementById(`step${i}`);
         if (stepElement) {
             stepElement.classList.add('hidden');
         }
     }
+    // Also hide quick calc steps
+    const step8 = document.getElementById('step8');
+    const step9 = document.getElementById('step9');
+    if (step8) step8.classList.add('hidden');
+    if (step9) step9.classList.add('hidden');
 
     // Show current step
     const currentStepElement = document.getElementById(`step${stepNumber}`);
@@ -655,6 +724,11 @@ function showStep(stepNumber) {
     // Handle step 5 content based on report type
     if (stepNumber === 4) {
         updateStep5Content();
+    }
+
+    // Handle quick calculator step initialization
+    if (stepNumber === 8) {
+        initializeQuickCalculatorStep();
     }
 
     // Update progress and navigation
@@ -681,19 +755,38 @@ function showStep(stepNumber) {
  */
 function updateProgressIndicator() {
     const progressIndicator = document.getElementById('progressIndicator');
+    const quickProgressIndicator = document.getElementById('quickProgressIndicator');
     const currentStepEl = document.getElementById('currentStep');
     const stepTitleEl = document.getElementById('stepTitle');
     const progressBar = document.getElementById('progressBar');
-    
-    if (currentStep === 1) {
+    const quickStepTitleEl = document.getElementById('quickStepTitle');
+    const quickProgressBar = document.getElementById('quickProgressBar');
+
+    // Handle quick calculator steps
+    if (currentStep === 8 || currentStep === 9) {
         progressIndicator.classList.add('hidden');
+        quickProgressIndicator.classList.remove('hidden');
+
+        if (currentStep === 8) {
+            if (quickStepTitleEl) quickStepTitleEl.textContent = 'Impact Assessment';
+            if (quickProgressBar) quickProgressBar.style.width = '50%';
+        } else if (currentStep === 9) {
+            if (quickStepTitleEl) quickStepTitleEl.textContent = 'Results';
+            if (quickProgressBar) quickProgressBar.style.width = '100%';
+        }
     } else {
-        progressIndicator.classList.remove('hidden');
-        if (currentStepEl) currentStepEl.textContent = currentStep;
-        if (stepTitleEl) stepTitleEl.textContent = stepTitles[currentStep - 1];
-        if (progressBar) {
-            const progressPercent = (currentStep / totalSteps) * 100;
-            progressBar.style.width = `${progressPercent}%`;
+        // Hide quick calculator progress and handle regular flow
+        quickProgressIndicator.classList.add('hidden');
+
+        if (currentStep === 1) {
+            progressIndicator.classList.add('hidden');
+        } else {
+            progressIndicator.classList.remove('hidden');
+            if (stepTitleEl) stepTitleEl.textContent = stepTitles[currentStep - 1];
+            if (progressBar) {
+                const progressPercent = (currentStep / totalSteps) * 100;
+                progressBar.style.width = `${progressPercent}%`;
+            }
         }
     }
 }
@@ -703,10 +796,36 @@ function updateProgressIndicator() {
  */
 function updateNavigation() {
     const navigationContainer = document.getElementById('navigationContainer');
+    const quickStep8Navigation = document.getElementById('quickStep8Navigation');
+    const quickStep9Navigation = document.getElementById('quickStep9Navigation');
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
+    const startFreshBtn = document.getElementById('startFreshBtn');
 
-    if (currentStep === 1 || currentStep === totalSteps) {
+    // Hide all navigation containers first
+    navigationContainer.classList.add('hidden');
+    if (quickStep8Navigation) quickStep8Navigation.classList.add('hidden');
+    if (quickStep9Navigation) quickStep9Navigation.classList.add('hidden');
+
+    // Handle fixed Start Fresh button visibility
+    if (startFreshBtn) {
+        // Show Start Fresh button on steps 2-6, hide on step 1, 7, and quick calculator steps
+        if (currentStep >= 2 && currentStep <= 6) {
+            startFreshBtn.classList.remove('hidden');
+        } else {
+            startFreshBtn.classList.add('hidden');
+        }
+    }
+
+    // Show appropriate navigation based on current step
+    if (currentStep === 8) {
+        // Quick calculator questionnaire step
+        if (quickStep8Navigation) quickStep8Navigation.classList.remove('hidden');
+    } else if (currentStep === 9) {
+        // Quick calculator results step
+        if (quickStep9Navigation) quickStep9Navigation.classList.remove('hidden');
+    } else if (currentStep === 1 || currentStep === totalSteps) {
+        // Hide navigation for first and last steps of main flow
         navigationContainer.classList.add('hidden');
     } else if (currentStep === 2) {
         // Step 2: Show only Previous button (no Next button)
@@ -721,7 +840,7 @@ function updateNavigation() {
     } else {
         navigationContainer.classList.remove('hidden');
 
-        // Show Next button for steps 3-5
+        // Show Next button for steps 3-6
         if (nextBtn) {
             nextBtn.style.display = 'inline-flex';
             const canProceed = canProceedFromCurrentStep();
@@ -945,7 +1064,7 @@ function showValidationErrors(errors) {
 }
 
 /**
- * Moves to previous step
+ * Moves to previous step without data reset
  */
 function prevStep() {
     if (currentStep > 1) {
@@ -1208,8 +1327,11 @@ function initEasyMDE() {
 function calculateScore() {
     const totalScore = calculateBugScore(appData);
 
+    // Check if "This is a blocker" option was selected
+    const isBlocker = appData.questionsAnswered.importance === 'A';
+
     appData.calculatedScore = totalScore;
-    appData.priority = getPriority(totalScore);
+    appData.priority = getPriority(totalScore, isBlocker);
 
     // Generate the final output
     generateFinalOutput();
@@ -1481,6 +1603,7 @@ function startNewReport() {
     Object.assign(appData, {
         reportType: 'bug',
         ticketType: 'new',
+        isQuickCalc: false,
         isInternal: false,
         customerName: '',
         monthlyARR: '',
@@ -1535,8 +1658,95 @@ function startNewReport() {
         customPlanContainer.classList.add('hidden');
     }
 
+    // Reset quick calculator specific fields
+    const quickExternalFields = document.getElementById('quickExternalFields');
+    if (quickExternalFields) {
+        quickExternalFields.style.display = 'block';
+    }
+
+    const quickCustomPlanContainer = document.getElementById('quickCustomPlanContainer');
+    if (quickCustomPlanContainer) {
+        quickCustomPlanContainer.classList.add('hidden');
+    }
+
+    const quickPlanScoreContext = document.getElementById('quickPlanScoreContext');
+    if (quickPlanScoreContext) {
+        quickPlanScoreContext.classList.add('hidden');
+    }
+
     // Go back to step 1
     showStep(1);
+}
+
+/**
+ * Checks if we should show reset confirmation when going back
+ */
+function shouldShowResetConfirmation() {
+    // Only show confirmation when navigating back to Due Diligence (step 3) or Customer Information (step 4)
+    // from Impact Assessment, Documentation, or Final Report (steps 5+)
+    // and when there's actual data that would be lost
+    if ((currentStep >= 5) && hasFormData()) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Checks if there's any form data that would be lost
+ */
+function hasFormData() {
+    // Check if any important fields have data
+    const fieldsToCheck = [
+        'customerName', 'monthlyARR', 'planType', 'customPlanText',
+        'bugSummary', 'stepsToReproduce', 'expectedVsActual',
+        'storyDescription', 'currentFunctionality', 'expectedFunctionality', 'timelineContext'
+    ];
+
+    for (let fieldId of fieldsToCheck) {
+        const field = document.getElementById(fieldId);
+        if (field && field.value && field.value.trim()) {
+            return true;
+        }
+    }
+
+    // Check if any questionnaire questions are answered
+    if (Object.keys(appData.questionsAnswered).length > 0) {
+        return true;
+    }
+
+    // Check if any due diligence checkboxes are checked
+    if (appData.dueDiligence.checkedExistingTickets ||
+        appData.dueDiligence.reviewedDocumentation ||
+        appData.dueDiligence.checkedSlackDiscussions) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Shows the reset confirmation modal
+ */
+function showResetConfirmationModal() {
+    const modal = document.getElementById('confirmationModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        // Focus on the cancel button by default
+        const cancelBtn = document.getElementById('cancelResetBtn');
+        if (cancelBtn) {
+            cancelBtn.focus();
+        }
+    }
+}
+
+/**
+ * Hides the reset confirmation modal
+ */
+function hideResetConfirmationModal() {
+    const modal = document.getElementById('confirmationModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
 }
 
 /**
@@ -2254,5 +2464,312 @@ function updateBugDocumentationStep() {
     setTimeout(() => {
         updateTabOrder();
     }, 10);
+}
+
+// =============================================================================
+// QUICK CALCULATOR FUNCTIONS
+// =============================================================================
+
+/**
+ * Initializes the quick calculator step
+ */
+function initializeQuickCalculatorStep() {
+    // Populate questions
+    populateQuickCalculatorQuestions();
+
+    // Set up event listeners for internal/external toggle
+    const quickInternalReport = document.getElementById('quickInternalReport');
+    const quickExternalFields = document.getElementById('quickExternalFields');
+
+    if (quickInternalReport) {
+        quickInternalReport.addEventListener('change', function() {
+            if (quickExternalFields) {
+                quickExternalFields.style.display = this.checked ? 'none' : 'block';
+            }
+        });
+    }
+
+    // Set up plan type dropdown
+    const quickPlanType = document.getElementById('quickPlanType');
+    const quickCustomPlanContainer = document.getElementById('quickCustomPlanContainer');
+    const quickPlanScoreContext = document.getElementById('quickPlanScoreContext');
+
+    if (quickPlanType) {
+        quickPlanType.addEventListener('change', function() {
+            if (quickCustomPlanContainer && quickPlanScoreContext) {
+                if (this.value === 'Custom') {
+                    quickCustomPlanContainer.classList.remove('hidden');
+                    quickPlanScoreContext.classList.remove('hidden');
+                } else {
+                    quickCustomPlanContainer.classList.add('hidden');
+                    quickPlanScoreContext.classList.add('hidden');
+                }
+            }
+        });
+    }
+
+    // Add Calculate Score button
+    addQuickCalculatorButton();
+}
+
+/**
+ * Populates the quick calculator questions
+ */
+function populateQuickCalculatorQuestions() {
+    const container = document.getElementById('quickQuestionsContainer');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    questions.forEach((question, index) => {
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-6';
+
+        const questionTitle = document.createElement('h4');
+        questionTitle.className = 'text-base font-semibold mb-4 text-slate-700 dark:text-slate-200';
+        questionTitle.textContent = question.text;
+        questionDiv.appendChild(questionTitle);
+
+        const optionsDiv = document.createElement('div');
+        optionsDiv.className = 'space-y-3';
+
+        question.options.forEach((option, optionIndex) => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'flex items-start';
+
+            const radioInput = document.createElement('input');
+            radioInput.type = 'radio';
+            radioInput.name = `quick_${question.id}`;
+            radioInput.value = option.value;
+            radioInput.id = `quick_${question.id}-${option.value}`;
+            radioInput.className = 'h-4 w-4 text-sky-600 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-sky-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 rounded mt-1';
+
+            const label = document.createElement('label');
+            label.className = 'ml-3 block text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer';
+            label.htmlFor = `quick_${question.id}-${option.value}`;
+            label.textContent = option.label;
+
+            optionDiv.appendChild(radioInput);
+            optionDiv.appendChild(label);
+            optionsDiv.appendChild(optionDiv);
+        });
+
+        questionDiv.appendChild(optionsDiv);
+        container.appendChild(questionDiv);
+    });
+}
+
+/**
+ * Adds the Calculate Score button to the quick calculator step
+ */
+function addQuickCalculatorButton() {
+    const container = document.getElementById('quickQuestionsContainer');
+    if (!container) return;
+
+    // Check if button already exists
+    const existingButton = document.getElementById('quickCalculateBtn');
+    if (existingButton) return;
+
+    const buttonDiv = document.createElement('div');
+    buttonDiv.className = 'mt-8 text-center';
+
+    const calculateBtn = document.createElement('button');
+    calculateBtn.id = 'quickCalculateBtn';
+    calculateBtn.className = 'bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 px-8 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-purple-500 transition duration-150 ease-in-out text-lg';
+    calculateBtn.textContent = '🧮 Calculate Score';
+
+    calculateBtn.addEventListener('click', function() {
+        if (validateQuickCalculatorStep()) {
+            saveQuickCalculatorData();
+            calculateQuickScore();
+            showStep(9);
+        }
+    });
+
+    buttonDiv.appendChild(calculateBtn);
+    container.parentNode.appendChild(buttonDiv);
+}
+
+/**
+ * Validates the quick calculator step
+ */
+function validateQuickCalculatorStep() {
+    const errors = [];
+
+    // Check if internal/external is properly configured
+    const quickInternalReport = document.getElementById('quickInternalReport');
+    const isInternal = quickInternalReport ? quickInternalReport.checked : false;
+
+    if (!isInternal) {
+        const planType = document.getElementById('quickPlanType')?.value;
+        if (!planType) {
+            errors.push('Please select a plan type');
+        }
+
+        if (planType === 'Custom') {
+            const customPlanText = document.getElementById('quickCustomPlanText')?.value;
+            const customPlanScore = document.getElementById('quickCustomPlanScore')?.value;
+
+            if (!customPlanText) {
+                errors.push('Please enter custom plan type');
+            }
+            if (!customPlanScore) {
+                errors.push('Please enter custom plan score');
+            }
+        }
+    }
+
+    // Check if all questions are answered
+    questions.forEach(question => {
+        const checkedOption = document.querySelector(`input[name="quick_${question.id}"]:checked`);
+        if (!checkedOption) {
+            errors.push(`Please answer: ${question.text}`);
+        }
+    });
+
+    if (errors.length > 0) {
+        showValidationErrors(errors);
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Saves quick calculator data to appData
+ */
+function saveQuickCalculatorData() {
+    const quickInternalReport = document.getElementById('quickInternalReport');
+    appData.isInternal = quickInternalReport ? quickInternalReport.checked : false;
+
+    if (!appData.isInternal) {
+        appData.planType = document.getElementById('quickPlanType')?.value || '';
+
+        if (appData.planType === 'Custom') {
+            appData.customPlanText = document.getElementById('quickCustomPlanText')?.value || '';
+            appData.customPlanScore = parseInt(document.getElementById('quickCustomPlanScore')?.value) || 1;
+        }
+    }
+
+    // Save question answers
+    appData.questionsAnswered = {};
+    questions.forEach(question => {
+        const checkedOption = document.querySelector(`input[name="quick_${question.id}"]:checked`);
+        if (checkedOption) {
+            appData.questionsAnswered[question.id] = checkedOption.value;
+        }
+    });
+}
+
+/**
+ * Calculates quick score and generates output
+ */
+function calculateQuickScore() {
+    const totalScore = calculateBugScore(appData);
+
+    // Check if "This is a blocker" option was selected
+    const isBlocker = appData.questionsAnswered.importance === 'A';
+
+    appData.calculatedScore = totalScore;
+    appData.priority = getPriority(totalScore, isBlocker);
+
+    // Generate quick calculator output
+    generateQuickCalculatorOutput();
+}
+
+/**
+ * Generates the quick calculator output
+ */
+function generateQuickCalculatorOutput() {
+    const sanitized = {
+        questionsAnswered: sanitizeInput(JSON.stringify(appData.questionsAnswered))
+    };
+
+    // Build questionnaire results
+    let questionnaireResults = '';
+
+    questions.forEach(question => {
+        const userAnswer = appData.questionsAnswered[question.id];
+        if (userAnswer) {
+            const selectedOption = question.options.find(opt => opt.value === userAnswer);
+            if (selectedOption) {
+                questionnaireResults += `**${question.text}** ${selectedOption.label}\n`;
+            }
+        }
+    });
+
+    questionnaireResults += `**Final Score:** ${appData.calculatedScore}\n`;
+    questionnaireResults += `**Priority:** ${appData.priority.text}`;
+
+    // Update the UI
+    updateQuickCalculatorResults(questionnaireResults);
+}
+
+/**
+ * Updates the quick calculator results UI
+ */
+function updateQuickCalculatorResults(template) {
+    // Update score and priority display
+    const quickScoreValue = document.getElementById('quickScoreValue');
+    const quickPriorityText = document.getElementById('quickPriorityText');
+    const quickPriorityAlert = document.getElementById('quickPriorityAlert');
+    const quickScoreProgressBar = document.getElementById('quickScoreProgressBar');
+    const quickCopyText = document.getElementById('quickCopyText');
+
+    // Update individual elements like main flow
+    if (quickScoreValue) quickScoreValue.textContent = appData.calculatedScore;
+    if (quickPriorityText) quickPriorityText.textContent = appData.priority.text;
+
+    // Apply priority styling to alert container (like main flow)
+    if (quickPriorityAlert) {
+        quickPriorityAlert.className = appData.priority.classList;
+    }
+
+    // Update progress bar
+    if (quickScoreProgressBar) {
+        const maxScore = 250; // Same max score as main flow
+        const progressPercent = Math.min((appData.calculatedScore / maxScore) * 100, 100);
+        setTimeout(() => {
+            quickScoreProgressBar.style.width = `${progressPercent}%`;
+            quickScoreProgressBar.setAttribute('aria-valuenow', progressPercent.toString());
+        }, 50);
+    }
+
+    // Update template text
+    if (quickCopyText) {
+        quickCopyText.value = template;
+    }
+
+    // Set up copy and new report buttons
+    setupQuickCalculatorButtons();
+}
+
+/**
+ * Sets up the quick calculator buttons
+ */
+function setupQuickCalculatorButtons() {
+    const quickCopyBtn = document.getElementById('quickCopyBtn');
+    const quickStartNewBtn = document.getElementById('quickStartNewBtn');
+
+    if (quickCopyBtn) {
+        quickCopyBtn.addEventListener('click', function() {
+            const quickCopyText = document.getElementById('quickCopyText');
+            if (quickCopyText) {
+                quickCopyText.select();
+                quickCopyText.setSelectionRange(0, 99999);
+                navigator.clipboard.writeText(quickCopyText.value).then(() => {
+                    showUserMessage('Copied to clipboard!', 'success');
+                }).catch(() => {
+                    showUserMessage('Failed to copy to clipboard', 'error');
+                });
+            }
+        });
+    }
+
+    if (quickStartNewBtn) {
+        quickStartNewBtn.addEventListener('click', function() {
+            startNewReport();
+        });
+    }
 }
 
