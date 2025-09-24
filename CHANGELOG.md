@@ -5,16 +5,12 @@ All notable changes to the Transifex Ticket Builder will be documented in this f
 ## [1.3.0] - 2025-09-24
 
 ### Added
-- Fixed "Start Fresh" button in top-right corner for easy form reset
+- Added "Quick Score Calculator" flow when you need just an update on the score
+- "Start Fresh" button in top-right corner for easy form reset
 - Automatic "Severe" priority assignment when "This is a blocker" option is selected
 
 ### Changed
 - Updated priority score ranges: Trivial (1-19), Low (20-49), Medium (50-99), High (≥100)
-- Removed form reset confirmation dialogs for seamless navigation
-- Users can now navigate back through steps without losing data
-
-### Fixed
-- Navigation flow no longer interrupts user workflow with unexpected confirmations
 
 ## [1.2.0] - 2025-09-22
 
