@@ -7,7 +7,7 @@ Internal tool for creating standardized JIRA tickets with automatic priority sco
 - Creates bug reports and story requests with consistent formatting
 - **Rich text editing** with markdown support and live preview
 - **Quality control** with Due Diligence step for new tickets
-- Calculates priority scores based on impact assessment
+- Calculates priority scores with automatic "Severe" priority for blockers
 - Generates JIRA-ready templates with customer details
 - Supports image attachments (paste or drag & drop integrated with markdown editor)
 - Interactive help tooltips for guidance throughout the process
