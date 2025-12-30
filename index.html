@@ -170,10 +170,23 @@
                     <h2 class="text-2xl font-semibold mb-6 text-slate-700 dark:text-slate-200">Customer Details</h2>
                     
                     <div class="mb-6">
-                        <label class="flex items-center space-x-3">
-                            <input type="checkbox" id="internalReport" class="h-4 w-4 text-sky-600 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-sky-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 rounded">
-                            <span class="text-sm font-medium text-slate-700 dark:text-slate-300">This is an internal report</span>
-                        </label>
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">Report Source <span class="text-red-500">*</span></label>
+                        <div class="flex flex-wrap gap-4">
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="radio" name="reportSource" value="external" id="reportSourceExternal" checked class="h-4 w-4 text-sky-600 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-sky-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Customer</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="radio" name="reportSource" value="prospect" id="reportSourceProspect" class="h-4 w-4 text-sky-600 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-sky-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Prospect</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="radio" name="reportSource" value="internal" id="reportSourceInternal" class="h-4 w-4 text-sky-600 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-sky-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Internal</span>
+                            </label>
+                        </div>
+                        <!-- Hidden checkbox for backward compatibility -->
+                        <input type="checkbox" id="internalReport" class="hidden">
                     </div>
                     
                     <div id="externalFields" class="space-y-4">
@@ -203,10 +216,10 @@
                                     <div id="planScoreContext" class="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md text-sm text-blue-700 dark:text-blue-300 hidden">
                                         <p class="font-medium mb-2">Score reference for other plans:</p>
                                         <ul class="space-y-1">
-                                            <li><strong>Enterprise+:</strong> 5 points</li>
-                                            <li><strong>Growth:</strong> 4 points</li>
-                                            <li><strong>Starter:</strong> 3 points</li>
-                                            <li><strong>Open Source:</strong> 2 points</li>
+                                            <li><strong>Enterprise+:</strong> 10 points</li>
+                                            <li><strong>Growth:</strong> 7 points</li>
+                                            <li><strong>Starter/Prospect:</strong> 5 points</li>
+                                            <li><strong>Open Source:</strong> 3 points</li>
                                             <li><strong>Internal:</strong> 1 point</li>
                                         </ul>
                                     </div>
@@ -263,25 +276,15 @@
 
                     <!-- Story Documentation -->
                     <div id="storyContainer" class="space-y-6 hidden">
-                        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
-                            <p class="text-sm text-blue-700 dark:text-blue-300">
-                                💡 <strong>Tip:</strong> You can paste images directly into text fields using Ctrl+V (Cmd+V on Mac) or drag and drop image files.
-                            </p>
-                        </div>
                         <div>
                             <label for="storyDescription" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Description</label>
                             <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Describe what the customer wants to achieve</p>
                             <textarea id="storyDescription" rows="4" placeholder="What does the customer want to accomplish..." class="block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white"></textarea>
                         </div>
                         <div>
-                            <label for="currentFunctionality" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Current Functionality</label>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Describe existing functionality (if any)</p>
-                            <textarea id="currentFunctionality" rows="4" placeholder="What functionality exists today..." class="block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white"></textarea>
-                        </div>
-                        <div>
-                            <label for="expectedFunctionality" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Expected Functionality</label>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Describe the desired functionality</p>
-                            <textarea id="expectedFunctionality" rows="4" placeholder="What the customer expects or needs..." class="block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white"></textarea>
+                            <label for="currentVsExpected" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Current vs Expected Functionality</label>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Compare what exists today versus what the customer needs</p>
+                            <textarea id="currentVsExpected" rows="6" placeholder="Current: What functionality exists today...&#10;&#10;Expected: What the customer expects or needs..." class="block w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:text-white"></textarea>
                         </div>
                         <div>
                             <label for="timelineContext" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Timeline & Context</label>
@@ -298,11 +301,6 @@
             <div class="max-w-4xl mx-auto">
                 <div class="bg-white dark:bg-slate-800 shadow-xl rounded-xl p-8">
                     <h2 class="text-2xl font-semibold mb-6 text-slate-700 dark:text-slate-200">Bug Documentation</h2>
-                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
-                        <p class="text-sm text-blue-700 dark:text-blue-300">
-                            💡 <strong>Tip:</strong> You can paste images directly into text fields using Ctrl+V (Cmd+V on Mac) or drag and drop image files.
-                        </p>
-                    </div>
                     <div class="space-y-6">
                         <div>
                             <label for="bugSummary" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Summary</label>
@@ -373,12 +371,25 @@
                 <div class="bg-white dark:bg-slate-800 shadow-xl rounded-xl p-8">
                     <h2 class="text-2xl font-semibold mb-6 text-slate-700 dark:text-slate-200">Quick Score Calculator</h2>
 
-                    <!-- Internal/External Toggle -->
+                    <!-- Report Source Radio Buttons -->
                     <div class="mb-6">
-                        <label class="flex items-center space-x-3">
-                            <input type="checkbox" id="quickInternalReport" class="h-4 w-4 text-sky-600 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-sky-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 rounded">
-                            <span class="text-sm font-medium text-slate-700 dark:text-slate-300">This is an internal report</span>
-                        </label>
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">Report Source <span class="text-red-500">*</span></label>
+                        <div class="flex flex-wrap gap-4">
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="radio" name="quickReportSource" value="external" id="quickReportSourceExternal" checked class="h-4 w-4 text-sky-600 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-sky-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Customer</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="radio" name="quickReportSource" value="prospect" id="quickReportSourceProspect" class="h-4 w-4 text-sky-600 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-sky-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Prospect</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="radio" name="quickReportSource" value="internal" id="quickReportSourceInternal" class="h-4 w-4 text-sky-600 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-sky-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Internal</span>
+                            </label>
+                        </div>
+                        <!-- Hidden checkbox for backward compatibility -->
+                        <input type="checkbox" id="quickInternalReport" class="hidden">
                     </div>
 
                     <!-- External Plan Type -->
@@ -401,10 +412,10 @@
                                     <div id="quickPlanScoreContext" class="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md text-sm text-blue-700 dark:text-blue-300 hidden">
                                         <p class="font-medium mb-2">Score reference for other plans:</p>
                                         <ul class="space-y-1">
-                                            <li><strong>Enterprise+:</strong> 5 points</li>
-                                            <li><strong>Growth:</strong> 4 points</li>
-                                            <li><strong>Starter:</strong> 3 points</li>
-                                            <li><strong>Open Source:</strong> 2 points</li>
+                                            <li><strong>Enterprise+:</strong> 10 points</li>
+                                            <li><strong>Growth:</strong> 7 points</li>
+                                            <li><strong>Starter/Prospect:</strong> 5 points</li>
+                                            <li><strong>Open Source:</strong> 3 points</li>
                                             <li><strong>Internal:</strong> 1 point</li>
                                         </ul>
                                     </div>
@@ -504,11 +515,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Fixed Start Fresh Button -->
-        <button id="startFreshBtn" class="fixed top-4 right-4 z-40 bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2.5 px-6 rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-sky-500 transition duration-150 ease-in-out hidden">
-            🔄 Start Fresh
-        </button>
 
         <!-- Navigation -->
         <div id="navigationContainer" class="max-w-2xl mx-auto mt-8 hidden">
